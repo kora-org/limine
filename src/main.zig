@@ -16,6 +16,7 @@ pub const File = struct {
     path: []const u8,
     cmdline: []const u8,
     partiton_index: u64,
+    _unused: u32,
     tftp_ip: u32,
     tftp_port: u32,
     mbr_disk_id: u32,
