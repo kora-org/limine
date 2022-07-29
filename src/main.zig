@@ -15,18 +15,26 @@ pub const File = struct {
     length: u64,
     path: []const u8,
     cmdline: []const u8,
-    partiton_index: u64,
+    media_type: MediaTypes,
     _unused: u32,
     tftp_ip: u32,
     tftp_port: u32,
+    partiton_index: u32,
     mbr_disk_id: u32,
     gpt_disk_uuid: Uuid,
     gpt_part_uuid: Uuid,
     part_uuid: Uuid,
+
+    pub const MediaTypes {
+        Generic,
+        Optical,
+        Tftp,
+    };
 };
 
 pub const Identifiers = enum([4]u64) {
     BootloaderInfo = .{ COMMON_MAGIC, 0xf55038d8e2a1202f, 0x279426fcf5f59740 },
+    StackSize = .{ COMMON_MAGIC, 0x224ef0460a8e8926, 0xe1cb0fc25f46ea3d },
     Hhdm = .{ COMMON_MAGIC, 0x48dcf1cb8ad2b852, 0x63984e959a98244b },
     Framebuffer = .{ COMMON_MAGIC, 0xcbfe81d7dd2d1977, 0x063150319ebc9b71 },
     Terminal = .{ COMMON_MAGIC, 0x0785a0aea5d0750f, 0x1c1936fee0d6cf6e },
@@ -54,6 +62,19 @@ pub const BootloaderInfo = struct {
         revision: u64,
         name: []const u8,
         version: []const u8,
+    };
+};
+
+pub const StackSize = struct {
+    pub const Request = struct {
+        id: [4]u64 = Identifiers.StackSize,
+        revision: u64,
+        response: Response = null,
+        stack_size: u64 = null,
+    };
+
+    pub const Response = struct {
+        revision: u64,
     };
 };
 
@@ -96,7 +117,7 @@ pub const Framebuffer = struct {
         green_mask_shift: u8,
         blue_mask_size: u8,
         blue_mask_shift: u8,
-        _unused: u8,
+        _unused: [7]u8,
         edid_size: u64,
         edid: u64,
     };
@@ -107,14 +128,38 @@ pub const Terminal = struct {
         id: [4]u64 = Identifiers.Terminal,
         revision: u64,
         response: Response = null,
-        callback: fn (u64, u64, u64, u64) void = null,
+        callback: fn (Tty, u64, u64, u64, u64) void = null,
     };
 
     pub const Response = struct {
         revision: u64,
+        tty_count: u64,
+        ttys: Tty,
+        write: fn (tty: Tty, ptr: [:0]const u8, length: u64) callconv(.C) void,
+    };
+
+    pub const Tty = struct {
         columns: u32,
         rows: u32,
-        write: fn (ptr: [:0]const u8, length: u64) callconv(.C) void,
+        display: Framebuffer.Display,
+    };
+
+    pub const CallbackTypes = enum {
+        Dec = 10,
+        Bell = 20,
+        PrivateId = 30,
+        StatusReport = 40,
+        PositionReport = 50,
+        KeyboardLed = 60,
+        ModeSwitch = 70,
+        Linux = 80,
+    };
+
+    pub const ContextControl = enum(u64) {
+        Size = -1,
+        Save = -2,
+        Restore = -3,
+        FullRefresh = -4,
     };
 };
 
@@ -143,14 +188,14 @@ pub const Smp = struct {
         flags: u32,
         bsp_lapic_id: u32,
         cpu_count: u64,
-        cpus: [*]Info,
+        cpus: [*]Cpu,
     };
 
-    pub const Info = struct {
+    pub const Cpu = struct {
         processor_id: u32,
         lapic_id: u32,
         reserved_id: u64,
-        goto_address: fn (*Info) void,
+        goto_address: fn (*Cpu) void,
         extra_argument: u64,
     };
 };
@@ -262,7 +307,7 @@ pub const EfiSystemTable = struct {
 
     pub const Response = struct {
         revision: u64,
-        system_table: std.os.uefi.SystemTable,
+        system_table: *std.os.uefi.SystemTable,
     };
 };
 
