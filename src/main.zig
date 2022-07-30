@@ -144,7 +144,7 @@ pub const Terminal = struct {
         display: Framebuffer.Display,
     };
 
-    pub const CallbackTypes = enum {
+    pub const CallbackTypes = enum(u64) {
         Dec = 10,
         Bell = 20,
         PrivateId = 30,
