@@ -54,12 +54,12 @@ pub const Identifiers = struct {
 pub const BootloaderInfo = struct {
     pub const Request = struct {
         id: [4]u64 = Identifiers.BootloaderInfo,
-        revision: u64,
-        response: Response = null,
+        revision: u64 = 0,
+        response: ?*Response = null,
     };
 
     pub const Response = struct {
-        revision: u64,
+        revision: u64 = 0,
         name: []const u8,
         version: []const u8,
     };
@@ -68,25 +68,25 @@ pub const BootloaderInfo = struct {
 pub const StackSize = struct {
     pub const Request = struct {
         id: [4]u64 = Identifiers.StackSize,
-        revision: u64,
-        response: Response = null,
+        revision: u64 = 0,
+        response: ?*Response = null,
         stack_size: u64 = null,
     };
 
     pub const Response = struct {
-        revision: u64,
+        revision: u64 = 0,
     };
 };
 
 pub const Hhdm = struct {
     pub const Request = struct {
         id: [4]u64 = Identifiers.Hhdm,
-        revision: u64,
-        response: Response = null,
+        revision: u64 = 0,
+        response: ?*Response = null,
     };
 
     pub const Response = struct {
-        revision: u64,
+        revision: u64 = 0,
         offset: u64,
     };
 };
@@ -94,12 +94,12 @@ pub const Hhdm = struct {
 pub const Framebuffer = struct {
     pub const Request = struct {
         id: [4]u64 = Identifiers.Framebuffer,
-        revision: u64,
-        response: Response = null,
+        revision: u64 = 0,
+        response: ?*Response = null,
     };
 
     pub const Response = struct {
-        revision: u64,
+        revision: u64 = 0,
         display_count: u64,
         displays: [*]Display,
     };
@@ -126,13 +126,13 @@ pub const Framebuffer = struct {
 pub const Terminal = struct {
     pub const Request = struct {
         id: [4]u64 = Identifiers.Terminal,
-        revision: u64,
-        response: Response = null,
+        revision: u64 = 0,
+        response: ?*Response = null,
         callback: fn (Tty, u64, u64, u64, u64) void = null,
     };
 
     pub const Response = struct {
-        revision: u64,
+        revision: u64 = 0,
         tty_count: u64,
         ttys: Tty,
         write: fn (tty: Tty, ptr: [:0]const u8, length: u64) callconv(.C) void,
@@ -166,25 +166,25 @@ pub const Terminal = struct {
 pub const FiveLevelPaging = struct {
     pub const Request = struct {
         id: [4]u64 = Identifiers.FiveLevelPaging,
-        revision: u64,
-        response: Response = null,
+        revision: u64 = 0,
+        response: ?*Response = null,
     };
 
     pub const Response = struct {
-        revision: u64,
+        revision: u64 = 0,
     };
 };
 
 pub const Smp = struct {
     pub const Request = struct {
         id: [4]u64 = Identifiers.Smp,
-        revision: u64,
-        response: Response = null,
+        revision: u64 = 0,
+        response: ?*Response = null,
         flags: u64 = 0,
     };
 
     pub const Response = struct {
-        revision: u64,
+        revision: u64 = 0,
         flags: u32,
         bsp_lapic_id: u32,
         cpu_count: u64,
@@ -203,12 +203,12 @@ pub const Smp = struct {
 pub const MemoryMap = struct {
     pub const Request = struct {
         id: [4]u64 = Identifiers.MemoryMap,
-        revision: u64,
-        response: Response = null,
+        revision: u64 = 0,
+        response: ?*Response = null,
     };
 
     pub const Response = struct {
-        revision: u64,
+        revision: u64 = 0,
         entry_count: u64,
         entries: [*]Entry,
     };
@@ -234,25 +234,25 @@ pub const MemoryMap = struct {
 pub const EntryPoint = struct {
     pub const Request = struct {
         id: [4]u64 = Identifiers.EntryPoint,
-        revision: u64,
-        response: Response = null,
+        revision: u64 = 0,
+        response: ?*Response = null,
         entry_point: fn () void = null,
     };
 
     pub const Response = struct {
-        revision: u64,
+        revision: u64 = 0,
     };
 };
 
 pub const KernelFile = struct {
     pub const Request = struct {
         id: [4]u64 = Identifiers.KernelFile,
-        revision: u64,
-        response: Response = null,
+        revision: u64 = 0,
+        response: ?*Response = null,
     };
 
     pub const Response = struct {
-        revision: u64,
+        revision: u64 = 0,
         kernel_file: *File,
     };
 };
@@ -260,12 +260,12 @@ pub const KernelFile = struct {
 pub const Module = struct {
     pub const Request = struct {
         id: [4]u64 = Identifiers.Module,
-        revision: u64,
-        response: Response = null,
+        revision: u64 = 0,
+        response: ?*Response = null,
     };
 
     pub const Response = struct {
-        revision: u64,
+        revision: u64 = 0,
         module_count: u64,
         modules: [*]File,
     };
@@ -274,12 +274,12 @@ pub const Module = struct {
 pub const Rdsp = struct {
     pub const Request = struct {
         id: [4]u64 = Identifiers.Rdsp,
-        revision: u64,
-        response: Response = null,
+        revision: u64 = 0,
+        response: ?*Response = null,
     };
 
     pub const Response = struct {
-        revision: u64,
+        revision: u64 = 0,
         address: u64,
     };
 };
@@ -287,12 +287,12 @@ pub const Rdsp = struct {
 pub const Smbios = struct {
     pub const Request = struct {
         id: [4]u64 = Identifiers.Smbios,
-        revision: u64,
-        response: Response = null,
+        revision: u64 = 0,
+        response: ?*Response = null,
     };
 
     pub const Response = struct {
-        revision: u64,
+        revision: u64 = 0,
         entry_32: u64,
         entry_64: u64,
     };
@@ -301,25 +301,25 @@ pub const Smbios = struct {
 pub const EfiSystemTable = struct {
     pub const Request = struct {
         id: [4]u64 = Identifiers.EfiSystemTable,
-        revision: u64,
-        response: Response = null,
+        revision: u64 = 0,
+        response: ?*Response = null,
     };
 
     pub const Response = struct {
-        revision: u64,
-        system_table: *std.os.uefi.SystemTable,
+        revision: u64 = 0,
+        system_table: ?*std.os.uefi.SystemTable,
     };
 };
 
 pub const BootTime = struct {
     pub const Request = struct {
         id: [4]u64 = Identifiers.BootTime,
-        revision: u64,
-        response: Response = null,
+        revision: u64 = 0,
+        response: ?*Response = null,
     };
 
     pub const Response = struct {
-        revision: u64,
+        revision: u64 = 0,
         boot_time: i64,
     };
 };
@@ -327,12 +327,12 @@ pub const BootTime = struct {
 pub const KernelAddress = struct {
     pub const Request = struct {
         id: [4]u64 = Identifiers.KernelAddress,
-        revision: u64,
-        response: Response = null,
+        revision: u64 = 0,
+        response: ?*Response = null,
     };
 
     pub const Response = struct {
-        revision: u64,
+        revision: u64 = 0,
         physical_base: u64,
         virtual_base: u64,
     };
