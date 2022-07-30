@@ -32,23 +32,23 @@ pub const File = struct {
     };
 };
 
-pub const Identifiers = enum([4]u64) {
-    BootloaderInfo = .{ COMMON_MAGIC, 0xf55038d8e2a1202f, 0x279426fcf5f59740 },
-    StackSize = .{ COMMON_MAGIC, 0x224ef0460a8e8926, 0xe1cb0fc25f46ea3d },
-    Hhdm = .{ COMMON_MAGIC, 0x48dcf1cb8ad2b852, 0x63984e959a98244b },
-    Framebuffer = .{ COMMON_MAGIC, 0xcbfe81d7dd2d1977, 0x063150319ebc9b71 },
-    Terminal = .{ COMMON_MAGIC, 0x0785a0aea5d0750f, 0x1c1936fee0d6cf6e },
-    FiveLevelPaging = .{ COMMON_MAGIC, 0x94469551da9b3192, 0xebe5e86db7382888 },
-    Smp = .{ COMMON_MAGIC, 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 },
-    MemoryMap = .{ COMMON_MAGIC, 0x67cf3d9d378a806f, 0xe304acdfc50c3c62 },
-    EntryPoint = .{ COMMON_MAGIC, 0x13d86c035a1cd3e1, 0x2b0caa89d8f3026a },
-    KernelFile = .{ COMMON_MAGIC, 0xad97e90e83f1ed67, 0x31eb5d1c5ff23b69 },
-    Module = .{ COMMON_MAGIC, 0x3e7e279702be32af, 0xca1c4f3bd1280cee },
-    Rdsp = .{ COMMON_MAGIC, 0xc5e77b6b397e7b43, 0x27637845accdcf3c },
-    Smbios = .{ COMMON_MAGIC, 0x9e9046f11e095391, 0xaa4a520fefbde5ee },
-    EfiSystemTable = .{ COMMON_MAGIC, 0x5ceba5163eaaf6d6, 0x0a6981610cf65fcc },
-    BootTime = .{ COMMON_MAGIC, 0x502746e184c088aa, 0xfbc5ec83e6327893 },
-    KernelAddress = .{ COMMON_MAGIC, 0x71ba76863cc55f63, 0xb2644a48c516a487 },
+pub const Identifiers = struct {
+    pub const BootloaderInfo = COMMON_MAGIC ++ .{ 0xf55038d8e2a1202f, 0x279426fcf5f59740 };
+    pub const StackSize = COMMON_MAGIC ++ .{ 0x224ef0460a8e8926, 0xe1cb0fc25f46ea3d };
+    pub const Hhdm = COMMON_MAGIC ++ .{ 0x48dcf1cb8ad2b852, 0x63984e959a98244b };
+    pub const Framebuffer = COMMON_MAGIC ++ .{ 0xcbfe81d7dd2d1977, 0x063150319ebc9b71 };
+    pub const Terminal = COMMON_MAGIC ++ .{ 0x0785a0aea5d0750f, 0x1c1936fee0d6cf6e };
+    pub const FiveLevelPaging = COMMON_MAGIC ++ .{ 0x94469551da9b3192, 0xebe5e86db7382888 };
+    pub const Smp = COMMON_MAGIC ++ .{ 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 };
+    pub const MemoryMap = COMMON_MAGIC ++ .{ 0x67cf3d9d378a806f, 0xe304acdfc50c3c62 };
+    pub const EntryPoint = COMMON_MAGIC ++ .{ 0x13d86c035a1cd3e1, 0x2b0caa89d8f3026a };
+    pub const KernelFile = COMMON_MAGIC ++ .{ 0xad97e90e83f1ed67, 0x31eb5d1c5ff23b69 };
+    pub const Module = COMMON_MAGIC ++ .{ 0x3e7e279702be32af, 0xca1c4f3bd1280cee };
+    pub const Rdsp = COMMON_MAGIC ++ .{ 0xc5e77b6b397e7b43, 0x27637845accdcf3c };
+    pub const Smbios = COMMON_MAGIC ++ .{ 0x9e9046f11e095391, 0xaa4a520fefbde5ee };
+    pub const EfiSystemTable = COMMON_MAGIC ++ .{ 0x5ceba5163eaaf6d6, 0x0a6981610cf65fcc };
+    pub const BootTime = COMMON_MAGIC ++ .{ 0x502746e184c088aa, 0xfbc5ec83e6327893 };
+    pub const KernelAddress = COMMON_MAGIC ++ .{ 0x71ba76863cc55f63, 0xb2644a48c516a487 };
 };
 
 pub const BootloaderInfo = struct {
