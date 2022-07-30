@@ -128,7 +128,7 @@ pub const Terminal = struct {
         id: [4]u64 = Identifiers.Terminal,
         revision: u64 = 0,
         response: ?*Response = null,
-        callback: fn (Tty, u64, u64, u64, u64) void = null,
+        callback: ?fn (Tty, u64, u64, u64, u64) void = null,
     };
 
     pub const Response = struct {
@@ -307,7 +307,7 @@ pub const EfiSystemTable = struct {
 
     pub const Response = struct {
         revision: u64 = 0,
-        system_table: ?*std.os.uefi.SystemTable,
+        system_table: *std.os.uefi.SystemTable,
     };
 };
 
