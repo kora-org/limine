@@ -25,7 +25,7 @@ pub const File = struct {
     gpt_part_uuid: Uuid,
     part_uuid: Uuid,
 
-    pub const MediaTypes {
+    pub const MediaTypes = enum {
         Generic,
         Optical,
         Tftp,
