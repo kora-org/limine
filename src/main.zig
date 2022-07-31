@@ -170,9 +170,13 @@ pub const Framebuffer = struct {
     };
 
     pub const Display = extern struct {
+        /// Address to the framebuffer of the display
         address: u64,
+        /// Width of the display in pixels
         width: u16,
+        /// Height of the display in pixels
         height: u16,
+        /// Pitch in bytes
         pitch: u16,
         /// Bits per pixel
         bpp: u16,
@@ -344,11 +348,11 @@ pub const Terminal = struct {
         /// which the terminal will write a single `u64` which contains
         /// the size of the terminal context.
         Size = @bitCast(u64, @as(i64, -1)),
+        Save = @bitCast(u64, @as(i64, -2)),
         /// For `Save` and `Restore`, the `ptr` variable has to point to 
         /// a location to which the terminal will save or restore its 
         /// context from, respectively. This location must have a size 
         /// congruent to the value received from `Size`.
-        Save = @bitCast(u64, @as(i64, -2)),
         Restore = @bitCast(u64, @as(i64, -3)),
         /// For FullRefresh, the `ptr` variable is unused. This routine 
         /// is to be used after control of the framebuffer is taken over
