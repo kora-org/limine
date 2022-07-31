@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: nektro/actions-setup-zig@v1
+    - uses: goto-bus-stop/setup-zig@v1
       with:
-        version: 0.10.0-dev.3385+c0a1b4fa4
+        version: master
 
     - name: Generate documentation
       run: zig build docs
