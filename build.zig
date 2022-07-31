@@ -12,6 +12,12 @@ pub fn build(b: *std.build.Builder) void {
     const main_tests = b.addTest("src/main.zig");
     main_tests.setBuildMode(mode);
 
+    const docs = b.addTest("src/docs.zig");
+    docs.emit_docs = .emit;
+
     const test_step = b.step("test", "Run library tests");
     test_step.dependOn(&main_tests.step);
+
+    const docs_step = b.step("docs", "Generate documentation");
+    docs_step.dependOn(&docs.step);
 }

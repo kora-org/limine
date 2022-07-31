@@ -10,19 +10,40 @@ pub const Uuid = struct {
 };
 
 pub const File = struct {
+    /// The revision of the file.
     revision: u64,
+    /// The address of the file.
     base: u64,
+    /// The size of the file.
     length: u64,
+    /// The path of the file within the volume, with a leading slash.
     path: []const u8,
+    /// A command line associated with the file.
+    // NOTE: this is stupid, who the hell wants to add a command line
+    // argument to a fricking file
     cmdline: []const u8,
+    /// Type of media file resides on.
     media_type: MediaTypes,
     _unused: u32,
+    /// If non-0, this is the IP of the TFTP server the file was loaded
+    /// from.
     tftp_ip: u32,
+    /// Likewise, but port.
     tftp_port: u32,
+    /// 1-based partition index of the volume from which the file was
+    /// loaded. If 0, it means invalid or unpartitioned.
     partiton_index: u32,
+    /// If non-0, this is the ID of the disk the file was loaded from
+    /// as reported in its MBR.
     mbr_disk_id: u32,
+    /// If non-0, this is the UUID of the disk the file was loaded from
+    /// as reported in its GPT.
     gpt_disk_uuid: Uuid,
+    /// If non-0, this is the UUID of the partition the file was loaded
+    /// from as reported in the GPT.
     gpt_part_uuid: Uuid,
+    /// If non-0, this is the UUID of the filesystem of the partition
+    /// the file was loaded from.
     part_uuid: Uuid,
 
     pub const MediaTypes = enum {
@@ -30,6 +51,11 @@ pub const File = struct {
         Optical,
         Tftp,
     };
+
+    /// Returns a slice of the file.
+    pub fn getSlice(self: *const @This()) []const u8 {
+        return @ptrCast([*]u8, self.base)[0..self.length];
+    }
 };
 
 pub const Identifiers = struct {
@@ -53,64 +79,104 @@ pub const Identifiers = struct {
 
 pub const BootloaderInfo = struct {
     pub const Request = extern struct {
+        /// The ID of the request.
         id: [4]u64 = Identifiers.BootloaderInfo,
+        /// The revision of the request that the kernel provides.
         revision: u64 = 0,
+        /// The pointer to the response structure.
         response: ?*const Response = null,
     };
 
     pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
-        name: []const u8,
-        version: []const u8,
+        /// Zero-terminated ASCII strings containing the name of the loading bootloader.
+        name: [*:0]const u8,
+        /// Zero-terminated ASCII strings containing the version of the loading bootloader.
+        version: [*:0]const u8,
+
+        /// Returns the Zig string version of the bootloader name.
+        pub fn getName(self: *const @This()) [:0]const u8 {
+            return std.mem.sliceTo(self.name, 0);
+        }
+
+        /// Returns the Zig string version of the bootloader version.
+        pub fn getVersion(self: *const @This()) [:0]const u8 {
+            return std.mem.sliceTo(self.version, 0);
+        }
     };
 };
 
 pub const StackSize = struct {
     pub const Request = extern struct {
+        /// The ID of the request.
         id: [4]u64 = Identifiers.StackSize,
+        /// The revision of the request that the kernel provides.
         revision: u64 = 0,
+        /// The pointer to the response structure.
         response: ?*const Response = null,
-        stack_size: u64 = null,
+        /// The requested stack size (also used for SMP processors).
+        stack_size: u64,
     };
 
     pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
     };
 };
 
 pub const Hhdm = struct {
     pub const Request = extern struct {
+        /// The ID of the request.
         id: [4]u64 = Identifiers.Hhdm,
+        /// The revision of the request that the kernel provides.
         revision: u64 = 0,
+        /// The pointer to the response structure.
         response: ?*const Response = null,
     };
 
     pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
+        /// The virtual address offset of the beginning of the higher
+        /// half direct map.
         offset: u64,
     };
 };
 
 pub const Framebuffer = struct {
     pub const Request = extern struct {
+        /// The ID of the request.
         id: [4]u64 = Identifiers.Framebuffer,
+        /// The revision of the request that the kernel provides.
         revision: u64 = 0,
+        /// The pointer to the response structure.
         response: ?*const Response = null,
     };
 
     pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
+        /// How many displays are present.
         display_count: u64,
-        displays: [*]Display,
+        /// Pointer to an array of `display_count` pointers to `Display`
+        /// structures.
+        displays: [*]*Display,
+
+        /// Returns a slice of the `displays` array.
+        pub fn getDisplays(self: *const @This()) []*Display {
+            return self.displays[0..self.display_count];
+        }
     };
 
-    pub const Display = struct {
+    pub const Display = extern struct {
         address: u64,
         width: u16,
         height: u16,
         pitch: u16,
+        /// Bits per pixel
         bpp: u16,
-        memory_model: u8,
+        memory_model: MemoryModel,
         red_mask_size: u8,
         red_mask_shift: u8,
         green_mask_size: u8,
@@ -119,67 +185,98 @@ pub const Framebuffer = struct {
         blue_mask_shift: u8,
         _unused: [7]u8,
         edid_size: u64,
-        edid: u64,
+        edid: ?[*]const u8,
+
+        /// Returns a slice of the `address` pointer.
+        pub fn getSlice(self: *const @This()) []u8 {
+            return @ptrCast([*]u8, self.address)[0..self.pitch * self.width];
+        }
+
+        /// Returns the EDID data.
+        pub fn getEdid(self: *const @This()) ?[]const u8 {
+            if (self.edid) |edid| {
+                return edid[0..self.edid_size];
+            }
+            return null;
+        }
+
+        pub const MemoryModel = enum(u8) {
+            Rgb = 1,
+            _,
+        };
     };
 };
 
 pub const Terminal = struct {
-    const Self = @This();
-
     pub const Request = extern struct {
+        /// The ID of the request.
         id: [4]u64 = Identifiers.Terminal,
+        /// The revision of the request that the kernel provides.
         revision: u64 = 0,
+        /// The pointer to the response structure.
         response: ?*const Response = null,
-        callback: ?fn (Tty, u64, u64, u64, u64) void = null,
+        /// Pointer to the callback function.
+        callback: ?*fn (?*Tty, u64, u64, u64, u64) void = null,
     };
 
     pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
+        /// How many TTYs are present.
         tty_count: u64,
-        ttys: [*]Tty,
-        write: fn (tty: Tty, ptr: [:0]const u8, length: u64) callconv(.C) void,
+        /// Pointer to an array of `tty_count` pointers to `Tty` structures.
+        ttys: [*]*Tty,
+        /// Physical pointer to the terminal write() function.
+        write_fn: *fn (tty: ?*Tty, ptr: [:0]const u8, length: u64) callconv(.C) void,
 
-        pub fn writer(self: Response, tty: Tty) Writer {
-            return Writer{ .context1 = self, .context2 = tty };
+        /// Returns a slice of the `ttys` array.
+        pub fn getTtys(self: *const @This()) []*Tty {
+            return self.ttys[0..self.tty_count];
         }
 
-        pub fn write(self: Response, tty: Tty, bytes: []const u8) void {
-            self.writer(tty).write(bytes.ptr, bytes.len);
+        /// Returns a writer of a TTY.
+        pub fn writer(self: Response, tty: ?*Tty) Tty.Writer {
+            return Tty.Writer{ .context1 = self, .context2 = tty };
         }
 
-        pub fn print(self: Response, tty: Tty, comptime format: []const u8, args: anytype) void {
+        pub fn write(self: Response, tty: ?*Tty, bytes: []const u8) void {
+            self.writer(tty).write(bytes.ptr);
+        }
+
+        pub fn print(self: Response, tty: ?*Tty, comptime format: []const u8, args: anytype) void {
             self.writer(tty).print(format, args) catch unreachable;
         }
     };
 
-    pub const Tty = struct {
+    pub const Tty = extern struct {
         columns: u32,
         rows: u32,
-        display: Framebuffer.Display,
+        /// The display associated with this terminal.
+        display: *Framebuffer.Display,
 
         pub const Writer = struct {
             context1: Response,
-            context2: Tty,
+            context2: ?*Tty,
             pub const Error = error{};
 
-            pub fn write(self: Writer, bytes: []const u8) !usize {
-                self.context1.write(context2, bytes);
+            pub fn write(self: @This(), bytes: []const u8) !usize {
+                self.context1.write_fn(self.context2, bytes, bytes.len);
                 return bytes.len;
             }
 
-            pub fn writeAll(self: Writer, bytes: []const u8) !void {
+            pub fn writeAll(self: @This(), bytes: []const u8) !void {
                 _ = try self.write(bytes);
             }
 
-            pub fn print(self: Writer, comptime format: []const u8, args: anytype) !void {
+            pub fn print(self: @This(), comptime format: []const u8, args: anytype) !void {
                 return std.fmt.format(self, format, args);
             }
 
-            pub fn writeByte(self: Writer, byte: u8) !void {
+            pub fn writeByte(self: @This(), byte: u8) !void {
                 _ = try self.write(&[_]u8{byte});
             }
 
-            pub fn writeByteNTimes(self: Writer, byte: u8, n: usize) !void {
+            pub fn writeByteNTimes(self: @This(), byte: u8, n: usize) !void {
                 var bytes: [256]u8 = undefined;
                 std.mem.set(u8, bytes[0..], byte);
 
@@ -194,75 +291,160 @@ pub const Terminal = struct {
     };
 
     pub const CallbackTypes = enum(u64) {
+        /// This callback is triggered whenever a DEC Private Mode 
+        /// (DECSET/DECRST) sequence is encountered that the TTY cannot 
+        /// handle alone. The arguments to this callback are: `tty`, 
+        /// `type`, `values_count`, `values`, and `final`.
         Dec = 10,
+        /// This callback is triggered whenever a bell event is
+        /// determined to be necessary (such as when a bell character \a
+        /// is encountered). The arguments to this callback are: `tty`
+        /// and `type`.
         Bell = 20,
+        /// This callback is triggered whenever the kernel has to respond
+        /// to a DEC private identification request. The arguments to this
+        /// callback are: `tty` and `type`.
         PrivateId = 30,
+        /// This callback is triggered whenever the kernel has to respond
+        /// to a ECMA-48 status report request. The arguments to this
+        /// callback are: `tty` and `type`.
         StatusReport = 40,
+        /// This callback is triggered whenever the kernel has to respond
+        /// to a ECMA-48 cursor position report request. The arguments to
+        /// this callback are: `tty`, `type`, `x`, and `y`. Where `x` and
+        /// `y` represent the cursor position at the time the callback is
+        /// triggered.
         PositionReport = 50,
+        /// This callback is triggered whenever the kernel has to respond 
+        /// to a keyboard LED state change request. The arguments to this 
+        /// callback are: `tty`, `type`, and `led_state`. `led_state` can
+        /// have one of the following values: 0, 1, 2, or 3. These values
+        /// mean: clear all LEDs, set scroll lock, set num lock, and set 
+        /// caps lock LED, respectively.
         KeyboardLed = 60,
+        /// This callback is triggered whenever an ECMA-48 Mode Switch
+        /// sequence is encountered that the TTY cannot handle alone. The
+        /// arguments to this callback are: `tty`, `type`, `values_count`,
+        /// `values`, and `final`.
         ModeSwitch = 70,
+        /// This callback is triggered whenever a private Linux escape 
+        /// sequence is encountered that the TTY cannot handle alone. The
+        /// arguments to this callback are: `tty`, `type`, `values_count`,
+        /// and `values`.
         Linux = 80,
     };
 
+    /// The write() function can additionally be used to set and restore
+    /// terminal context, and refresh the terminal fully.
+    ///
+    /// In order to achieve this, special values for the length argument 
+    /// are passed. These values are:
     pub const ContextControl = enum(u64) {
-        Size = -1,
-        Save = -2,
-        Restore = -3,
-        FullRefresh = -4,
+        /// For `Size`, the `ptr` variable has to point to a location to 
+        /// which the terminal will write a single `u64` which contains
+        /// the size of the terminal context.
+        Size = @bitCast(u64, @as(i64, -1)),
+        /// For `Save` and `Restore`, the `ptr` variable has to point to 
+        /// a location to which the terminal will save or restore its 
+        /// context from, respectively. This location must have a size 
+        /// congruent to the value received from `Size`.
+        Save = @bitCast(u64, @as(i64, -2)),
+        Restore = @bitCast(u64, @as(i64, -3)),
+        /// For FullRefresh, the `ptr` variable is unused. This routine 
+        /// is to be used after control of the framebuffer is taken over
+        /// and the bootloader's terminal has to fully repaint the
+        /// framebuffer to avoid inconsistencies.
+        FullRefresh = @bitCast(u64, @as(i64, -4)),
     };
 };
 
 pub const FiveLevelPaging = struct {
     pub const Request = extern struct {
+        /// The ID of the request.
         id: [4]u64 = Identifiers.FiveLevelPaging,
+        /// The revision of the request that the kernel provides.
         revision: u64 = 0,
+        /// The pointer to the response structure.
         response: ?*const Response = null,
     };
 
     pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
     };
 };
 
 pub const Smp = struct {
     pub const Request = extern struct {
+        /// The ID of the request.
         id: [4]u64 = Identifiers.Smp,
+        /// The revision of the request that the kernel provides.
         revision: u64 = 0,
+        /// The pointer to the response structure.
         response: ?*const Response = null,
+        /// Bit 0: Enable X2APIC, if possible.
         flags: u64 = 0,
     };
 
     pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
+        /// Bit 0: X2APIC has been enabled.
         flags: u32,
+        /// The Local APIC ID of the bootstrap processor.
         bsp_lapic_id: u32,
+        /// How many CPUs are present. It includes the bootstrap processor.
         cpu_count: u64,
-        cpus: [*]Cpu,
+        /// Pointer to an array of `cpu_count` pointers to `Cpu` structures.
+        cpus: [*]*Cpu,
+
+        /// Returns a slice of the `displays` array.
+        pub fn getCpus(self: *const @This()) []*Cpu {
+            return self.cpus[0..self.cpu_count];
+        }
     };
 
-    pub const Cpu = struct {
+    pub const Cpu = extern struct {
+        /// ACPI Processor UID as specified by the MADT
         processor_id: u32,
+        /// Local APIC ID of the processor as specified by the MADT
         lapic_id: u32,
         reserved_id: u64,
-        goto_address: fn (*Cpu) void,
+        /// An atomic write to this field causes the parked CPU to jump to
+        /// the written address, on a 64KiB (or Stack Size Request size) 
+        /// stack.
+        goto: fn (*Cpu) callconv(.C) void,
+        /// A free for use field.
         extra_argument: u64,
     };
 };
 
 pub const MemoryMap = struct {
     pub const Request = extern struct {
+        /// The ID of the request.
         id: [4]u64 = Identifiers.MemoryMap,
+        /// The revision of the request that the kernel provides.
         revision: u64 = 0,
+        /// The pointer to the response structure.
         response: ?*const Response = null,
     };
 
     pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
+        /// How many memory map entries are present.
         entry_count: u64,
-        entries: [*]Entry,
+        /// Pointer to an array of `entry_count` pointers to `Entry`
+        /// structures.
+        entries: [*]*Entry,
+
+        /// Returns a slice of the `entries` array.
+        pub fn getEntries(self: *const @This()) []*Entry {
+            return self.entries[0..self.entry_count];
+        }
     };
 
-    pub const Entry = struct {
+    pub const Entry = extern struct {
         base: u64,
         length: u64,
         type: Types,
@@ -282,107 +464,165 @@ pub const MemoryMap = struct {
 
 pub const EntryPoint = struct {
     pub const Request = extern struct {
+        /// The ID of the request.
         id: [4]u64 = Identifiers.EntryPoint,
+        /// The revision of the request that the kernel provides.
         revision: u64 = 0,
+        /// The pointer to the response structure.
         response: ?*const Response = null,
-        entry_point: fn () void = null,
+        /// The requested entry point.
+        entry_point: fn () callconv(.C) void,
     };
 
     pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
     };
 };
 
 pub const KernelFile = struct {
     pub const Request = extern struct {
+        /// The ID of the request.
         id: [4]u64 = Identifiers.KernelFile,
+        /// The revision of the request that the kernel provides.
         revision: u64 = 0,
+        /// The pointer to the response structure.
         response: ?*const Response = null,
     };
 
     pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
+        /// Pointer to the kernel file.
         kernel_file: *File,
     };
 };
 
 pub const Module = struct {
     pub const Request = extern struct {
+        /// The ID of the request.
         id: [4]u64 = Identifiers.Module,
+        /// The revision of the request that the kernel provides.
         revision: u64 = 0,
+        /// The pointer to the response structure.
         response: ?*const Response = null,
     };
 
     pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
+        /// How many modules are present.
         module_count: u64,
-        modules: [*]File,
+        /// Pointer to an array of `modules_count` pointers to the currently 
+        /// loaded modules.
+        modules: [*]*File,
+
+        /// Returns a slice of the `modules` array.
+        pub fn getModules(self: *const @This()) []*File {
+            return self.modules[0..self.module_count];
+        }
     };
 };
 
 pub const Rdsp = struct {
     pub const Request = extern struct {
+        /// The ID of the request.
         id: [4]u64 = Identifiers.Rdsp,
+        /// The revision of the request that the kernel provides.
         revision: u64 = 0,
+        /// The pointer to the response structure.
         response: ?*const Response = null,
     };
 
     pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
+        /// Address of the RSDP table.
         address: u64,
     };
 };
 
 pub const Smbios = struct {
     pub const Request = extern struct {
+        /// The ID of the request.
         id: [4]u64 = Identifiers.Smbios,
+        /// The revision of the request that the kernel provides.
         revision: u64 = 0,
+        /// The pointer to the response structure.
         response: ?*const Response = null,
     };
 
     pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
+        /// Address of the 32-bit SMBIOS entry point. 0 if not present.
         entry_32: u64,
+        /// Address of the 64-bit SMBIOS entry point. 0 if not present.
         entry_64: u64,
     };
 };
 
 pub const EfiSystemTable = struct {
     pub const Request = extern struct {
+        /// The ID of the request.
         id: [4]u64 = Identifiers.EfiSystemTable,
+        /// The revision of the request that the kernel provides.
         revision: u64 = 0,
+        /// The pointer to the response structure.
         response: ?*const Response = null,
     };
 
     pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
-        system_table: *std.os.uefi.SystemTable,
+        /// Pointer to the EFI system table. `null` if not present.
+        system_table: ?*std.os.uefi.SystemTable = null,
     };
 };
 
 pub const BootTime = struct {
     pub const Request = extern struct {
+        /// The ID of the request.
         id: [4]u64 = Identifiers.BootTime,
+        /// The revision of the request that the kernel provides.
         revision: u64 = 0,
+        /// The pointer to the response structure.
         response: ?*const Response = null,
     };
 
     pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
+        /// The UNIX time on boot, in seconds, taken from the system RTC.
         boot_time: i64,
     };
 };
 
 pub const KernelAddress = struct {
     pub const Request = extern struct {
+        /// The ID of the request.
         id: [4]u64 = Identifiers.KernelAddress,
+        /// The revision of the request that the kernel provides.
         revision: u64 = 0,
+        /// The pointer to the response structure.
         response: ?*const Response = null,
     };
 
     pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
+        /// The physical base address of the kernel.
         physical_base: u64,
+        /// The virtual base address of the kernel.
         virtual_base: u64,
     };
 };
+
+test "docs" {
+    // this is a dummy test function for docs generation
+    // im too lazy to write actual tests
+}
+
+comptime {
+    std.testing.refAllDecls(@This());
+}

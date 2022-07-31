@@ -1,0 +1,27 @@
+name: "Generate documentation"
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  # unit tests
+  units:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: nektro/actions-setup-zig@v1
+      with:
+        version: 0.10.0-dev.3385+c0a1b4fa4
+
+    - name: Generate documentation
+      run: zig build docs
+
+    - name: Push changes
+      run: |
+        git config --global user.name github-actions
+        git config --global user.email github-actions@github.com
+        git add .
+        git commit -am "Generate documentation"
+        git push
