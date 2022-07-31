@@ -5,23 +5,34 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 jobs:
-  # unit tests
-  units:
+  gen:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - uses: goto-bus-stop/setup-zig@v1
       with:
         version: master
-
+    - name: Setup Pages
+      uses: actions/configure-pages@v1
     - name: Generate documentation
       run: zig build docs
-
-    - name: Push changes
-      run: |
-        git config --global user.name github-actions
-        git config --global user.email github-actions@github.com
-        git add .
-        git commit -am "Generate documentation"
-        git push
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v1
+      with:
+        path: 'docs'
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@main
