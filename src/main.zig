@@ -52,13 +52,13 @@ pub const Identifiers = struct {
 };
 
 pub const BootloaderInfo = struct {
-    pub const Request = struct {
+    pub const Request = extern struct {
         id: [4]u64 = Identifiers.BootloaderInfo,
         revision: u64 = 0,
-        response: ?*Response = null,
+        response: ?*const Response = null,
     };
 
-    pub const Response = struct {
+    pub const Response = extern struct {
         revision: u64 = 0,
         name: []const u8,
         version: []const u8,
@@ -66,39 +66,39 @@ pub const BootloaderInfo = struct {
 };
 
 pub const StackSize = struct {
-    pub const Request = struct {
+    pub const Request = extern struct {
         id: [4]u64 = Identifiers.StackSize,
         revision: u64 = 0,
-        response: ?*Response = null,
+        response: ?*const Response = null,
         stack_size: u64 = null,
     };
 
-    pub const Response = struct {
+    pub const Response = extern struct {
         revision: u64 = 0,
     };
 };
 
 pub const Hhdm = struct {
-    pub const Request = struct {
+    pub const Request = extern struct {
         id: [4]u64 = Identifiers.Hhdm,
         revision: u64 = 0,
-        response: ?*Response = null,
+        response: ?*const Response = null,
     };
 
-    pub const Response = struct {
+    pub const Response = extern struct {
         revision: u64 = 0,
         offset: u64,
     };
 };
 
 pub const Framebuffer = struct {
-    pub const Request = struct {
+    pub const Request = extern struct {
         id: [4]u64 = Identifiers.Framebuffer,
         revision: u64 = 0,
-        response: ?*Response = null,
+        response: ?*const Response = null,
     };
 
-    pub const Response = struct {
+    pub const Response = extern struct {
         revision: u64 = 0,
         display_count: u64,
         displays: [*]Display,
@@ -124,24 +124,73 @@ pub const Framebuffer = struct {
 };
 
 pub const Terminal = struct {
-    pub const Request = struct {
+    const Self = @This();
+
+    pub const Request = extern struct {
         id: [4]u64 = Identifiers.Terminal,
         revision: u64 = 0,
-        response: ?*Response = null,
+        response: ?*const Response = null,
         callback: ?fn (Tty, u64, u64, u64, u64) void = null,
     };
 
-    pub const Response = struct {
+    pub const Response = extern struct {
         revision: u64 = 0,
         tty_count: u64,
-        ttys: Tty,
+        ttys: [*]Tty,
         write: fn (tty: Tty, ptr: [:0]const u8, length: u64) callconv(.C) void,
+
+        pub fn writer(self: Response, tty: Tty) Writer {
+            return Writer{ .context1 = self, .context2 = tty };
+        }
+
+        pub fn write(self: Response, tty: Tty, bytes: []const u8) void {
+            self.writer(tty).write(bytes.ptr, bytes.len);
+        }
+
+        pub fn print(self: Response, tty: Tty, comptime format: []const u8, args: anytype) void {
+            self.writer(tty).print(format, args) catch unreachable;
+        }
     };
 
     pub const Tty = struct {
         columns: u32,
         rows: u32,
         display: Framebuffer.Display,
+
+        pub const Writer = struct {
+            context1: Response,
+            context2: Tty,
+            pub const Error = error{};
+
+            pub fn write(self: Writer, bytes: []const u8) !usize {
+                self.context1.write(context2, bytes);
+                return bytes.len;
+            }
+
+            pub fn writeAll(self: Writer, bytes: []const u8) !void {
+                _ = try self.write(bytes);
+            }
+
+            pub fn print(self: Writer, comptime format: []const u8, args: anytype) !void {
+                return std.fmt.format(self, format, args);
+            }
+
+            pub fn writeByte(self: Writer, byte: u8) !void {
+                _ = try self.write(&[_]u8{byte});
+            }
+
+            pub fn writeByteNTimes(self: Writer, byte: u8, n: usize) !void {
+                var bytes: [256]u8 = undefined;
+                std.mem.set(u8, bytes[0..], byte);
+
+                var remaining: usize = n;
+                while (remaining > 0) {
+                    const to_write = std.math.min(remaining, bytes.len);
+                    try self.writeAll(bytes[0..to_write]);
+                    remaining -= to_write;
+                }
+            }
+        };
     };
 
     pub const CallbackTypes = enum(u64) {
@@ -164,26 +213,26 @@ pub const Terminal = struct {
 };
 
 pub const FiveLevelPaging = struct {
-    pub const Request = struct {
+    pub const Request = extern struct {
         id: [4]u64 = Identifiers.FiveLevelPaging,
         revision: u64 = 0,
-        response: ?*Response = null,
+        response: ?*const Response = null,
     };
 
-    pub const Response = struct {
+    pub const Response = extern struct {
         revision: u64 = 0,
     };
 };
 
 pub const Smp = struct {
-    pub const Request = struct {
+    pub const Request = extern struct {
         id: [4]u64 = Identifiers.Smp,
         revision: u64 = 0,
-        response: ?*Response = null,
+        response: ?*const Response = null,
         flags: u64 = 0,
     };
 
-    pub const Response = struct {
+    pub const Response = extern struct {
         revision: u64 = 0,
         flags: u32,
         bsp_lapic_id: u32,
@@ -201,13 +250,13 @@ pub const Smp = struct {
 };
 
 pub const MemoryMap = struct {
-    pub const Request = struct {
+    pub const Request = extern struct {
         id: [4]u64 = Identifiers.MemoryMap,
         revision: u64 = 0,
-        response: ?*Response = null,
+        response: ?*const Response = null,
     };
 
-    pub const Response = struct {
+    pub const Response = extern struct {
         revision: u64 = 0,
         entry_count: u64,
         entries: [*]Entry,
@@ -232,39 +281,39 @@ pub const MemoryMap = struct {
 };
 
 pub const EntryPoint = struct {
-    pub const Request = struct {
+    pub const Request = extern struct {
         id: [4]u64 = Identifiers.EntryPoint,
         revision: u64 = 0,
-        response: ?*Response = null,
+        response: ?*const Response = null,
         entry_point: fn () void = null,
     };
 
-    pub const Response = struct {
+    pub const Response = extern struct {
         revision: u64 = 0,
     };
 };
 
 pub const KernelFile = struct {
-    pub const Request = struct {
+    pub const Request = extern struct {
         id: [4]u64 = Identifiers.KernelFile,
         revision: u64 = 0,
-        response: ?*Response = null,
+        response: ?*const Response = null,
     };
 
-    pub const Response = struct {
+    pub const Response = extern struct {
         revision: u64 = 0,
         kernel_file: *File,
     };
 };
 
 pub const Module = struct {
-    pub const Request = struct {
+    pub const Request = extern struct {
         id: [4]u64 = Identifiers.Module,
         revision: u64 = 0,
-        response: ?*Response = null,
+        response: ?*const Response = null,
     };
 
-    pub const Response = struct {
+    pub const Response = extern struct {
         revision: u64 = 0,
         module_count: u64,
         modules: [*]File,
@@ -272,26 +321,26 @@ pub const Module = struct {
 };
 
 pub const Rdsp = struct {
-    pub const Request = struct {
+    pub const Request = extern struct {
         id: [4]u64 = Identifiers.Rdsp,
         revision: u64 = 0,
-        response: ?*Response = null,
+        response: ?*const Response = null,
     };
 
-    pub const Response = struct {
+    pub const Response = extern struct {
         revision: u64 = 0,
         address: u64,
     };
 };
 
 pub const Smbios = struct {
-    pub const Request = struct {
+    pub const Request = extern struct {
         id: [4]u64 = Identifiers.Smbios,
         revision: u64 = 0,
-        response: ?*Response = null,
+        response: ?*const Response = null,
     };
 
-    pub const Response = struct {
+    pub const Response = extern struct {
         revision: u64 = 0,
         entry_32: u64,
         entry_64: u64,
@@ -299,39 +348,39 @@ pub const Smbios = struct {
 };
 
 pub const EfiSystemTable = struct {
-    pub const Request = struct {
+    pub const Request = extern struct {
         id: [4]u64 = Identifiers.EfiSystemTable,
         revision: u64 = 0,
-        response: ?*Response = null,
+        response: ?*const Response = null,
     };
 
-    pub const Response = struct {
+    pub const Response = extern struct {
         revision: u64 = 0,
         system_table: *std.os.uefi.SystemTable,
     };
 };
 
 pub const BootTime = struct {
-    pub const Request = struct {
+    pub const Request = extern struct {
         id: [4]u64 = Identifiers.BootTime,
         revision: u64 = 0,
-        response: ?*Response = null,
+        response: ?*const Response = null,
     };
 
-    pub const Response = struct {
+    pub const Response = extern struct {
         revision: u64 = 0,
         boot_time: i64,
     };
 };
 
 pub const KernelAddress = struct {
-    pub const Request = struct {
+    pub const Request = extern struct {
         id: [4]u64 = Identifiers.KernelAddress,
         revision: u64 = 0,
-        response: ?*Response = null,
+        response: ?*const Response = null,
     };
 
-    pub const Response = struct {
+    pub const Response = extern struct {
         revision: u64 = 0,
         physical_base: u64,
         virtual_base: u64,
