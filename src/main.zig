@@ -2,6 +2,25 @@ const std = @import("std");
 
 const COMMON_MAGIC = .{ 0xc7b1dd30df4c8b88, 0x0a82e883a194f07b };
 
+pub const Identifiers = struct {
+    pub const BootloaderInfo = COMMON_MAGIC ++ .{ 0xf55038d8e2a1202f, 0x279426fcf5f59740 };
+    pub const StackSize = COMMON_MAGIC ++ .{ 0x224ef0460a8e8926, 0xe1cb0fc25f46ea3d };
+    pub const Hhdm = COMMON_MAGIC ++ .{ 0x48dcf1cb8ad2b852, 0x63984e959a98244b };
+    pub const Framebuffer = COMMON_MAGIC ++ .{ 0xcbfe81d7dd2d1977, 0x063150319ebc9b71 };
+    pub const Terminal = COMMON_MAGIC ++ .{ 0x0785a0aea5d0750f, 0x1c1936fee0d6cf6e };
+    pub const FiveLevelPaging = COMMON_MAGIC ++ .{ 0x94469551da9b3192, 0xebe5e86db7382888 };
+    pub const Smp = COMMON_MAGIC ++ .{ 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 };
+    pub const MemoryMap = COMMON_MAGIC ++ .{ 0x67cf3d9d378a806f, 0xe304acdfc50c3c62 };
+    pub const EntryPoint = COMMON_MAGIC ++ .{ 0x13d86c035a1cd3e1, 0x2b0caa89d8f3026a };
+    pub const KernelFile = COMMON_MAGIC ++ .{ 0xad97e90e83f1ed67, 0x31eb5d1c5ff23b69 };
+    pub const Module = COMMON_MAGIC ++ .{ 0x3e7e279702be32af, 0xca1c4f3bd1280cee };
+    pub const Rdsp = COMMON_MAGIC ++ .{ 0xc5e77b6b397e7b43, 0x27637845accdcf3c };
+    pub const Smbios = COMMON_MAGIC ++ .{ 0x9e9046f11e095391, 0xaa4a520fefbde5ee };
+    pub const EfiSystemTable = COMMON_MAGIC ++ .{ 0x5ceba5163eaaf6d6, 0x0a6981610cf65fcc };
+    pub const BootTime = COMMON_MAGIC ++ .{ 0x502746e184c088aa, 0xfbc5ec83e6327893 };
+    pub const KernelAddress = COMMON_MAGIC ++ .{ 0x71ba76863cc55f63, 0xb2644a48c516a487 };
+};
+
 pub const Uuid = struct {
     a: u32,
     b: u16,
@@ -56,25 +75,6 @@ pub const File = struct {
     pub fn getSlice(self: *const @This()) []const u8 {
         return @ptrCast([*]u8, self.base)[0..self.length];
     }
-};
-
-pub const Identifiers = struct {
-    pub const BootloaderInfo = COMMON_MAGIC ++ .{ 0xf55038d8e2a1202f, 0x279426fcf5f59740 };
-    pub const StackSize = COMMON_MAGIC ++ .{ 0x224ef0460a8e8926, 0xe1cb0fc25f46ea3d };
-    pub const Hhdm = COMMON_MAGIC ++ .{ 0x48dcf1cb8ad2b852, 0x63984e959a98244b };
-    pub const Framebuffer = COMMON_MAGIC ++ .{ 0xcbfe81d7dd2d1977, 0x063150319ebc9b71 };
-    pub const Terminal = COMMON_MAGIC ++ .{ 0x0785a0aea5d0750f, 0x1c1936fee0d6cf6e };
-    pub const FiveLevelPaging = COMMON_MAGIC ++ .{ 0x94469551da9b3192, 0xebe5e86db7382888 };
-    pub const Smp = COMMON_MAGIC ++ .{ 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 };
-    pub const MemoryMap = COMMON_MAGIC ++ .{ 0x67cf3d9d378a806f, 0xe304acdfc50c3c62 };
-    pub const EntryPoint = COMMON_MAGIC ++ .{ 0x13d86c035a1cd3e1, 0x2b0caa89d8f3026a };
-    pub const KernelFile = COMMON_MAGIC ++ .{ 0xad97e90e83f1ed67, 0x31eb5d1c5ff23b69 };
-    pub const Module = COMMON_MAGIC ++ .{ 0x3e7e279702be32af, 0xca1c4f3bd1280cee };
-    pub const Rdsp = COMMON_MAGIC ++ .{ 0xc5e77b6b397e7b43, 0x27637845accdcf3c };
-    pub const Smbios = COMMON_MAGIC ++ .{ 0x9e9046f11e095391, 0xaa4a520fefbde5ee };
-    pub const EfiSystemTable = COMMON_MAGIC ++ .{ 0x5ceba5163eaaf6d6, 0x0a6981610cf65fcc };
-    pub const BootTime = COMMON_MAGIC ++ .{ 0x502746e184c088aa, 0xfbc5ec83e6327893 };
-    pub const KernelAddress = COMMON_MAGIC ++ .{ 0x71ba76863cc55f63, 0xb2644a48c516a487 };
 };
 
 pub const BootloaderInfo = struct {
@@ -157,28 +157,28 @@ pub const Framebuffer = struct {
     pub const Response = extern struct {
         /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
-        /// How many displays are present.
-        display_count: u64,
-        /// Pointer to an array of `display_count` pointers to `Display`
+        /// How many framebuffer are present.
+        framebuffer_count: u64,
+        /// Pointer to an array of `framebuffer_count` pointers to `Fb`
         /// structures.
-        displays: [*]*Display,
+        framebuffers: [*]*Fb,
 
-        /// Returns a slice of the `displays` array.
-        pub fn getDisplays(self: *const @This()) []*Display {
-            return self.displays[0..self.display_count];
+        /// Returns a slice of the `framebuffers` array.
+        pub fn getFramebuffers(self: *const @This()) []*Fb {
+            return self.framebuffers[0..self.framebuffer_count];
         }
     };
 
-    pub const Display = extern struct {
-        /// Address to the framebuffer of the display
+    pub const Fb = extern struct {
+        /// Address to the framebuffer
         address: u64,
-        /// Width of the display in pixels
+        /// Width of the framebuffer in pixels
         width: u16,
-        /// Height of the display in pixels
+        /// Height of the framebuffer in pixels
         height: u16,
-        /// Pitch in bytes
+        /// Pitch of the framebuffer in bytes
         pitch: u16,
-        /// Bits per pixel
+        /// Bits per pixel of the framebuffer
         bpp: u16,
         memory_model: MemoryModel,
         red_mask_size: u8,
@@ -220,51 +220,52 @@ pub const Terminal = struct {
         /// The pointer to the response structure.
         response: ?*const Response = null,
         /// Pointer to the callback function.
-        callback: ?*fn (?*Tty, u64, u64, u64, u64) void = null,
+        callback: ?*fn (?*Term, u64, u64, u64, u64) void = null,
     };
 
     pub const Response = extern struct {
         /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
-        /// How many TTYs are present.
-        tty_count: u64,
-        /// Pointer to an array of `tty_count` pointers to `Tty` structures.
-        ttys: [*]*Tty,
+        /// How many terminals are present.
+        terminal_count: u64,
+        /// Pointer to an array of `terminal_count` pointers to `Term`
+        /// structures.
+        terminals: [*]*Term,
         /// Physical pointer to the terminal write() function.
-        write_fn: *fn (tty: ?*Tty, ptr: [:0]const u8, length: u64) callconv(.C) void,
+        write_fn: *fn (term: *Term, ptr: [*]const u8, length: u64) callconv(.C) void,
 
-        /// Returns a slice of the `ttys` array.
-        pub fn getTtys(self: *const @This()) []*Tty {
-            return self.ttys[0..self.tty_count];
+        /// Returns a slice of the `terminals` array.
+        pub fn getTerminals(self: *const @This()) []*Term {
+            return self.terminals[0..self.terminal_count];
         }
 
-        /// Returns a writer of a TTY.
-        pub fn writer(self: Response, tty: ?*Tty) Tty.Writer {
-            return Tty.Writer{ .context1 = self, .context2 = tty };
+        /// Returns a writer of a terminal.
+        pub fn writer(self: Response, terminal: *Term) Term.Writer {
+            return Term.Writer{ .context1 = self, .context2 = terminal };
         }
 
-        pub fn write(self: Response, tty: ?*Tty, bytes: []const u8) void {
-            self.writer(tty).write(bytes.ptr);
+        pub fn write(self: Response, terminal: *Term, bytes: []const u8) void {
+            _ = try self.writer(terminal).write(bytes);
         }
 
-        pub fn print(self: Response, tty: ?*Tty, comptime format: []const u8, args: anytype) void {
-            self.writer(tty).print(format, args) catch unreachable;
+        pub fn print(self: Response, terminal: *Term, comptime format: []const u8, args: anytype) void {
+            _ = try self.writer(terminal).print(format, args);
         }
     };
 
-    pub const Tty = extern struct {
+    pub const Term = extern struct {
         columns: u32,
         rows: u32,
-        /// The display associated with this terminal.
-        display: *Framebuffer.Display,
+        /// The framebuffer associated with this terminal.
+        framebuffer: *Framebuffer.Fb,
 
         pub const Writer = struct {
             context1: Response,
-            context2: ?*Tty,
+            context2: *Term,
             pub const Error = error{};
 
             pub fn write(self: @This(), bytes: []const u8) !usize {
-                self.context1.write_fn(self.context2, bytes, bytes.len);
+                self.context1.write_fn.*(self.context2, bytes.ptr, bytes.len);
                 return bytes.len;
             }
 
@@ -296,45 +297,45 @@ pub const Terminal = struct {
 
     pub const CallbackTypes = enum(u64) {
         /// This callback is triggered whenever a DEC Private Mode 
-        /// (DECSET/DECRST) sequence is encountered that the TTY cannot 
-        /// handle alone. The arguments to this callback are: `tty`, 
-        /// `type`, `values_count`, `values`, and `final`.
+        /// (DECSET/DECRST) sequence is encountered that the terminal
+        /// cannot handle alone. The arguments to this callback are:
+        /// `terminal`, `type`, `values_count`, `values`, and `final`.
         Dec = 10,
-        /// This callback is triggered whenever a bell event is
-        /// determined to be necessary (such as when a bell character \a
-        /// is encountered). The arguments to this callback are: `tty`
+        /// This callback is triggered whenever a bell event is determined 
+        /// to be necessary (such as when a bell character \a is 
+        /// encountered). The arguments to this callback are: `terminal`
         /// and `type`.
         Bell = 20,
         /// This callback is triggered whenever the kernel has to respond
         /// to a DEC private identification request. The arguments to this
-        /// callback are: `tty` and `type`.
+        /// callback are: `terminal` and `type`.
         PrivateId = 30,
         /// This callback is triggered whenever the kernel has to respond
         /// to a ECMA-48 status report request. The arguments to this
-        /// callback are: `tty` and `type`.
+        /// callback are: `terminal` and `type`.
         StatusReport = 40,
         /// This callback is triggered whenever the kernel has to respond
         /// to a ECMA-48 cursor position report request. The arguments to
-        /// this callback are: `tty`, `type`, `x`, and `y`. Where `x` and
-        /// `y` represent the cursor position at the time the callback is
-        /// triggered.
+        /// this callback are: `terminal`, `type`, `x`, and `y`. Where `x`
+        /// and `y` represent the cursor position at the time the callback
+        /// is triggered.
         PositionReport = 50,
         /// This callback is triggered whenever the kernel has to respond 
         /// to a keyboard LED state change request. The arguments to this 
-        /// callback are: `tty`, `type`, and `led_state`. `led_state` can
-        /// have one of the following values: 0, 1, 2, or 3. These values
-        /// mean: clear all LEDs, set scroll lock, set num lock, and set 
-        /// caps lock LED, respectively.
+        /// callback are: `terminal`, `type`, and `led_state`. `led_state`
+        /// can have one of the following values: 0, 1, 2, or 3. These
+        /// values mean: clear all LEDs, set scroll lock, set num lock, 
+        /// and set caps lock LED, respectively.
         KeyboardLed = 60,
         /// This callback is triggered whenever an ECMA-48 Mode Switch
-        /// sequence is encountered that the TTY cannot handle alone. The
-        /// arguments to this callback are: `tty`, `type`, `values_count`,
-        /// `values`, and `final`.
+        /// sequence is encountered that the terminal cannot handle alone.
+        /// The arguments to this callback are: `terminal`, `type`,
+        /// `values_count`, `values`, and `final`.
         ModeSwitch = 70,
         /// This callback is triggered whenever a private Linux escape 
-        /// sequence is encountered that the TTY cannot handle alone. The
-        /// arguments to this callback are: `tty`, `type`, `values_count`,
-        /// and `values`.
+        /// sequence is encountered that the terminal cannot handle alone.
+        /// The arguments to this callback are: `terminal`, `type`,
+        /// `values_count`, and `values`.
         Linux = 80,
     };
 
@@ -402,7 +403,7 @@ pub const Smp = struct {
         /// Pointer to an array of `cpu_count` pointers to `Cpu` structures.
         cpus: [*]*Cpu,
 
-        /// Returns a slice of the `displays` array.
+        /// Returns a slice of the `cpus` array.
         pub fn getCpus(self: *const @This()) []*Cpu {
             return self.cpus[0..self.cpu_count];
         }
