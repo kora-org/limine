@@ -232,7 +232,7 @@ pub const Terminal = struct {
         /// structures.
         terminals: [*]*Term,
         /// Physical pointer to the terminal write() function.
-        write_fn: *fn (term: *Term, ptr: [*]const u8, length: u64) callconv(.C) void,
+        write_fn: fn (term: ?*Term, ptr: [*]const u8, length: u64) callconv(.C) void,
 
         /// Returns a slice of the `terminals` array.
         pub fn getTerminals(self: *const @This()) []*Term {
@@ -240,15 +240,15 @@ pub const Terminal = struct {
         }
 
         /// Returns a writer of a terminal.
-        pub fn writer(self: Response, terminal: *Term) Term.Writer {
+        pub fn writer(self: Response, terminal: ?*Term) Term.Writer {
             return Term.Writer{ .context1 = self, .context2 = terminal };
         }
 
-        pub fn write(self: Response, terminal: *Term, bytes: []const u8) void {
+        pub fn write(self: Response, terminal: ?*Term, bytes: []const u8) void {
             _ = try self.writer(terminal).write(bytes);
         }
 
-        pub fn print(self: Response, terminal: *Term, comptime format: []const u8, args: anytype) void {
+        pub fn print(self: Response, terminal: ?*Term, comptime format: []const u8, args: anytype) void {
             _ = try self.writer(terminal).print(format, args);
         }
     };
@@ -261,11 +261,11 @@ pub const Terminal = struct {
 
         pub const Writer = struct {
             context1: Response,
-            context2: *Term,
+            context2: ?*Term,
             pub const Error = error{};
 
             pub fn write(self: @This(), bytes: []const u8) !usize {
-                self.context1.write_fn.*(self.context2, bytes.ptr, bytes.len);
+                self.context1.write_fn(self.context2, bytes.ptr, bytes.len);
                 return bytes.len;
             }
 
