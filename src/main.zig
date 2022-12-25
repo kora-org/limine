@@ -20,6 +20,7 @@ pub const Identifiers = struct {
     pub const EfiSystemTable = COMMON_MAGIC ++ .{ 0x5ceba5163eaaf6d6, 0x0a6981610cf65fcc };
     pub const BootTime = COMMON_MAGIC ++ .{ 0x502746e184c088aa, 0xfbc5ec83e6327893 };
     pub const KernelAddress = COMMON_MAGIC ++ .{ 0x71ba76863cc55f63, 0xb2644a48c516a487 };
+    pub const Dtb = COMMON_MAGIC ++ .{ 0xb40ddb48fb54bac7, 0x545081493f81ffb7 };
 };
 
 pub const Uuid = struct {
@@ -53,11 +54,11 @@ pub const File = struct {
     /// 1-based partition index of the volume from which the file was
     /// loaded. If 0, it means invalid or unpartitioned.
     partiton_index: u32,
-    /// If non-0, this is the ID of the disk the file was loaded from
-    /// as reported in its MBR.
+    /// If non-0, this is the ID of the disk the file was loaded from as
+    /// reported in its MBR.
     mbr_disk_id: u32,
-    /// If non-0, this is the UUID of the disk the file was loaded from
-    /// as reported in its GPT.
+    /// If non-0, this is the UUID of the disk the file was loaded from as
+    /// reported in its GPT.
     gpt_disk_uuid: Uuid,
     /// If non-0, this is the UUID of the partition the file was loaded
     /// from as reported in the GPT.
@@ -91,9 +92,11 @@ pub const BootloaderInfo = struct {
     pub const Response = extern struct {
         /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
-        /// Zero-terminated ASCII strings containing the name of the loading bootloader.
+        /// Zero-terminated ASCII strings containing the name of the
+        /// loading bootloader.
         name: [*:0]const u8,
-        /// Zero-terminated ASCII strings containing the version of the loading bootloader.
+        /// Zero-terminated ASCII strings containing the version of the
+        /// loading bootloader.
         version: [*:0]const u8,
 
         /// Returns the Zig string version of the bootloader name.
@@ -139,8 +142,8 @@ pub const Hhdm = struct {
     pub const Response = extern struct {
         /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
-        /// The virtual address offset of the beginning of the higher
-        /// half direct map.
+        /// The virtual address offset of the beginning of the higher half
+        /// direct map.
         offset: u64,
     };
 };
@@ -158,7 +161,7 @@ pub const Framebuffer = struct {
     pub const Response = extern struct {
         /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
-        /// How many framebuffer are present.
+        /// How many framebuffers are present.
         framebuffer_count: u64,
         /// Pointer to an array of `framebuffer_count` pointers to `Fb`
         /// structures.
@@ -192,9 +195,38 @@ pub const Framebuffer = struct {
         edid_size: u64,
         edid: ?[*]const u8,
 
+        /// How many video modes are present
+        mode_count: u64,
+        /// Pointer to an array of `mode_count` pointers to `VideoMode`
+        /// structures.
+        modes: [*]*VideoMode,
+
+        /// Returns a slice of the `modes` array.
+        pub fn getVideoModes(self: *const @This()) []*VideoMode {
+            return self.modes[0..self.mode_count];
+        }
+
+        pub const VideoMode = extern struct {
+            /// Pitch of the framebuffer in bytes
+            pitch: u16,
+            /// Width of the framebuffer in pixels
+            width: u16,
+            /// Height of the framebuffer in pixels
+            height: u16,
+            /// Bits per pixel of the framebuffer
+            bpp: u16,
+            memory_model: MemoryModel,
+            red_mask_size: u8,
+            red_mask_shift: u8,
+            green_mask_size: u8,
+            green_mask_shift: u8,
+            blue_mask_size: u8,
+            blue_mask_shift: u8,
+        };
+
         /// Returns a slice of the `address` pointer.
         pub fn getSlice(self: *const @This()) []u8 {
-            return @ptrCast([*]u8, self.address)[0..self.pitch * self.width];
+            return @ptrCast([*]u8, self.address)[0 .. self.pitch * self.width];
         }
 
         /// Returns the EDID data.
@@ -297,13 +329,13 @@ pub const Terminal = struct {
     };
 
     pub const CallbackTypes = enum(u64) {
-        /// This callback is triggered whenever a DEC Private Mode 
+        /// This callback is triggered whenever a DEC Private Mode
         /// (DECSET/DECRST) sequence is encountered that the terminal
         /// cannot handle alone. The arguments to this callback are:
         /// `terminal`, `type`, `values_count`, `values`, and `final`.
         Dec = 10,
-        /// This callback is triggered whenever a bell event is determined 
-        /// to be necessary (such as when a bell character \a is 
+        /// This callback is triggered whenever a bell event is determined
+        /// to be necessary (such as when a bell character \a is
         /// encountered). The arguments to this callback are: `terminal`
         /// and `type`.
         Bell = 20,
@@ -321,11 +353,11 @@ pub const Terminal = struct {
         /// and `y` represent the cursor position at the time the callback
         /// is triggered.
         PositionReport = 50,
-        /// This callback is triggered whenever the kernel has to respond 
-        /// to a keyboard LED state change request. The arguments to this 
+        /// This callback is triggered whenever the kernel has to respond
+        /// to a keyboard LED state change request. The arguments to this
         /// callback are: `terminal`, `type`, and `led_state`. `led_state`
         /// can have one of the following values: 0, 1, 2, or 3. These
-        /// values mean: clear all LEDs, set scroll lock, set num lock, 
+        /// values mean: clear all LEDs, set scroll lock, set num lock,
         /// and set caps lock LED, respectively.
         KeyboardLed = 60,
         /// This callback is triggered whenever an ECMA-48 Mode Switch
@@ -333,7 +365,7 @@ pub const Terminal = struct {
         /// The arguments to this callback are: `terminal`, `type`,
         /// `values_count`, `values`, and `final`.
         ModeSwitch = 70,
-        /// This callback is triggered whenever a private Linux escape 
+        /// This callback is triggered whenever a private Linux escape
         /// sequence is encountered that the terminal cannot handle alone.
         /// The arguments to this callback are: `terminal`, `type`,
         /// `values_count`, and `values`.
@@ -343,20 +375,20 @@ pub const Terminal = struct {
     /// The write() function can additionally be used to set and restore
     /// terminal context, and refresh the terminal fully.
     ///
-    /// In order to achieve this, special values for the length argument 
+    /// In order to achieve this, special values for the length argument
     /// are passed. These values are:
     pub const ContextControl = enum(u64) {
-        /// For `Size`, the `ptr` variable has to point to a location to 
+        /// For `Size`, the `ptr` variable has to point to a location to
         /// which the terminal will write a single `u64` which contains
         /// the size of the terminal context.
         Size = @bitCast(u64, @as(i64, -1)),
         Save = @bitCast(u64, @as(i64, -2)),
-        /// For `Save` and `Restore`, the `ptr` variable has to point to 
-        /// a location to which the terminal will save or restore its 
-        /// context from, respectively. This location must have a size 
+        /// For `Save` and `Restore`, the `ptr` variable has to point to
+        /// a location to which the terminal will save or restore its
+        /// context from, respectively. This location must have a size
         /// congruent to the value received from `Size`.
         Restore = @bitCast(u64, @as(i64, -3)),
-        /// For FullRefresh, the `ptr` variable is unused. This routine 
+        /// For FullRefresh, the `ptr` variable is unused. This routine
         /// is to be used after control of the framebuffer is taken over
         /// and the bootloader's terminal has to fully repaint the
         /// framebuffer to avoid inconsistencies.
@@ -392,36 +424,80 @@ pub const Smp = struct {
         flags: u64 = 0,
     };
 
-    pub const Response = extern struct {
-        /// The revision of the response that the bootloader provides.
-        revision: u64 = 0,
-        /// Bit 0: X2APIC has been enabled.
-        flags: u32,
-        /// The Local APIC ID of the bootstrap processor.
-        bsp_lapic_id: u32,
-        /// How many CPUs are present. It includes the bootstrap processor.
-        cpu_count: u64,
-        /// Pointer to an array of `cpu_count` pointers to `Cpu` structures.
-        cpus: [*]*Cpu,
+    pub const Response = switch (builtin.cpu.arch) {
+        .x86_64 => extern struct {
+            /// The revision of the response that the bootloader provides.
+            revision: u64 = 0,
+            /// Bit 0: X2APIC has been enabled.
+            flags: u32,
+            /// The Local APIC ID of the bootstrap processor.
+            bsp_lapic_id: u32,
+            /// How many CPUs are present. It includes the bootstrap
+            /// processor.
+            cpu_count: u64,
+            /// Pointer to an array of `cpu_count` pointers to `Cpu`
+            /// structures.
+            cpus: [*]*Cpu,
 
-        /// Returns a slice of the `cpus` array.
-        pub fn getCpus(self: *const @This()) []*Cpu {
-            return self.cpus[0..self.cpu_count];
-        }
+            /// Returns a slice of the `cpus` array.
+            pub fn getCpus(self: *const @This()) []*Cpu {
+                return self.cpus[0..self.cpu_count];
+            }
+        },
+        .aarch64 => extern struct {
+            /// The revision of the response that the bootloader provides.
+            revision: u64 = 0,
+            /// Always zero.
+            flags: u32,
+            /// MPIDR of the bootstrap processor (as read from
+            /// `MPIDR_EL1`, with Res1 masked off).
+            bsp_mpidr: u64,
+            /// How many CPUs are present. It includes the bootstrap
+            /// processor.
+            cpu_count: u64,
+            /// Pointer to an array of `cpu_count` pointers to `Cpu`
+            /// structures.
+            cpus: [*]*Cpu,
+
+            /// Returns a slice of the `cpus` array.
+            pub fn getCpus(self: *const @This()) []*Cpu {
+                return self.cpus[0..self.cpu_count];
+            }
+        },
+        else => unreachable,
     };
 
-    pub const Cpu = extern struct {
-        /// ACPI Processor UID as specified by the MADT
-        processor_id: u32,
-        /// Local APIC ID of the processor as specified by the MADT
-        lapic_id: u32,
-        reserved_id: u64,
-        /// An atomic write to this field causes the parked CPU to jump to
-        /// the written address, on a 64KiB (or Stack Size Request size) 
-        /// stack.
-        goto: std.meta.FnPtr(fn (*Cpu) callconv(.C) void),
-        /// A free for use field.
-        extra_argument: u64,
+    pub const Cpu = switch (builtin.cpu.arch) {
+        .x86_64 => extern struct {
+            /// ACPI Processor UID as specified by the MADT
+            processor_id: u32,
+            /// Local APIC ID of the processor as specified by the MADT
+            lapic_id: u32,
+            reserved: u64,
+            /// An atomic write to this field causes the parked CPU to
+            /// jump to the written address, on a 64KiB (or Stack Size
+            /// Request size) stack.
+            goto: std.meta.FnPtr(fn (*Cpu) callconv(.C) void),
+            /// A free for use field.
+            extra_argument: u64,
+        },
+        .aarch64 => extern struct {
+            /// ACPI Processor UID as specified by the MADT
+            processor_id: u32,
+            /// GIC CPU Interface number of the processor as specified by
+            /// the MADT (possibly always 0)
+            gic_iface_num: u32,
+            /// MPIDR of the processor as specified by the MADT or device
+            /// tree
+            mpidr: u64,
+            reserved: u64,
+            /// An atomic write to this field causes the parked CPU to
+            /// jump to the written address, on a 64KiB (or Stack Size
+            /// Request size) stack.
+            goto: std.meta.FnPtr(fn (*Cpu) callconv(.C) void),
+            /// A free for use field.
+            extra_argument: u64,
+        },
     };
 };
 
@@ -519,7 +595,7 @@ pub const Module = struct {
         revision: u64 = 0,
         /// How many modules are present.
         module_count: u64,
-        /// Pointer to an array of `modules_count` pointers to the currently 
+        /// Pointer to an array of `modules_count` pointers to the currently
         /// loaded modules.
         modules: [*]*File,
 
@@ -621,6 +697,24 @@ pub const KernelAddress = struct {
         physical_base: u64,
         /// The virtual base address of the kernel.
         virtual_base: u64,
+    };
+};
+
+pub const Dtb = struct {
+    pub const Request = extern struct {
+        /// The ID of the request.
+        id: [4]u64 = Identifiers.Dtb,
+        /// The revision of the request that the kernel provides.
+        revision: u64 = 0,
+        /// The pointer to the response structure.
+        response: ?*const Response = null,
+    };
+
+    pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
+        revision: u64 = 0,
+        /// Virtual pointer to the device tree blob. 0 if not present.
+        system_table: u64 = null,
     };
 };
 
