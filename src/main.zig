@@ -714,7 +714,7 @@ pub const Dtb = struct {
         /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
         /// Virtual pointer to the device tree blob. 0 if not present.
-        system_table: u64 = null,
+        device_tree: u64 = null,
     };
 };
 
