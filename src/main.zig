@@ -532,7 +532,7 @@ pub const MemoryMap = struct {
         type: Types,
     };
 
-    pub const Types = enum {
+    pub const Types = enum(c_int) {
         Usable,
         Reserved,
         AcpiReclaimable,
