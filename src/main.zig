@@ -253,7 +253,7 @@ pub const Terminal = struct {
         /// The pointer to the response structure.
         response: ?*const Response = null,
         /// Pointer to the callback function.
-        callback: ?std.meta.FnPtr(fn (?*Term, u64, u64, u64, u64) void) = null,
+        callback: ?*const fn (?*Term, u64, u64, u64, u64) void = null,
     };
 
     pub const Response = extern struct {
@@ -265,7 +265,7 @@ pub const Terminal = struct {
         /// structures.
         terminals: [*]*Term,
         /// Physical pointer to the terminal write() function.
-        write_fn: std.meta.FnPtr(fn (term: ?*Term, ptr: [*]const u8, length: u64) callconv(.C) void),
+        write_fn: *const fn (term: ?*Term, ptr: [*]const u8, length: u64) callconv(.C) void,
 
         /// Returns a slice of the `terminals` array.
         pub fn getTerminals(self: *const @This()) []*Term {
@@ -477,7 +477,7 @@ pub const Smp = struct {
             /// An atomic write to this field causes the parked CPU to
             /// jump to the written address, on a 64KiB (or Stack Size
             /// Request size) stack.
-            goto: std.meta.FnPtr(fn (*Cpu) callconv(.C) void),
+            goto: *const fn (*Cpu) callconv(.C) void,
             /// A free for use field.
             extra_argument: u64,
         },
@@ -494,7 +494,7 @@ pub const Smp = struct {
             /// An atomic write to this field causes the parked CPU to
             /// jump to the written address, on a 64KiB (or Stack Size
             /// Request size) stack.
-            goto: std.meta.FnPtr(fn (*Cpu) callconv(.C) void),
+            goto: *const fn (*Cpu) callconv(.C) void,
             /// A free for use field.
             extra_argument: u64,
         },
@@ -553,7 +553,7 @@ pub const EntryPoint = struct {
         /// The pointer to the response structure.
         response: ?*const Response = null,
         /// The requested entry point.
-        entry_point: std.meta.FnPtr(fn () callconv(.C) void),
+        entry_point: *const fn () callconv(.C) void,
     };
 
     pub const Response = extern struct {
