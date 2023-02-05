@@ -7,8 +7,8 @@ pub const Identifiers = struct {
     pub const BootloaderInfo = COMMON_MAGIC ++ .{ 0xf55038d8e2a1202f, 0x279426fcf5f59740 };
     pub const StackSize = COMMON_MAGIC ++ .{ 0x224ef0460a8e8926, 0xe1cb0fc25f46ea3d };
     pub const Hhdm = COMMON_MAGIC ++ .{ 0x48dcf1cb8ad2b852, 0x63984e959a98244b };
-    pub const Framebuffer = COMMON_MAGIC ++ .{ 0xcbfe81d7dd2d1977, 0x063150319ebc9b71 };
-    pub const Terminal = COMMON_MAGIC ++ .{ 0x0785a0aea5d0750f, 0x1c1936fee0d6cf6e };
+    pub const Framebuffer = COMMON_MAGIC ++ .{ 0x9d5827dcd881dd75, 0xa3148604f6fab11b };
+    pub const Terminal = COMMON_MAGIC ++ .{ 0xc8ac59310c2b0844, 0xa68d0c7265d38878 };
     pub const FiveLevelPaging = COMMON_MAGIC ++ .{ 0x94469551da9b3192, 0xebe5e86db7382888 };
     pub const Smp = COMMON_MAGIC ++ .{ 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 };
     pub const MemoryMap = COMMON_MAGIC ++ .{ 0x67cf3d9d378a806f, 0xe304acdfc50c3c62 };
@@ -226,7 +226,7 @@ pub const Framebuffer = struct {
 
         /// Returns a slice of the `address` pointer.
         pub fn getSlice(self: *const @This()) []u8 {
-            return @ptrCast([*]u8, self.address)[0 .. self.pitch * self.width];
+            return @intToPtr([*]u8, self.address)[0 .. self.pitch * self.width];
         }
 
         /// Returns the EDID data.
