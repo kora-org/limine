@@ -177,11 +177,11 @@ pub const Framebuffer = struct {
         /// Address to the framebuffer
         address: u64,
         /// Width of the framebuffer in pixels
-        width: u16,
+        width: u64,
         /// Height of the framebuffer in pixels
-        height: u16,
+        height: u64,
         /// Pitch of the framebuffer in bytes
-        pitch: u16,
+        pitch: u64,
         /// Bits per pixel of the framebuffer
         bpp: u16,
         memory_model: MemoryModel,
@@ -208,11 +208,11 @@ pub const Framebuffer = struct {
 
         pub const VideoMode = extern struct {
             /// Pitch of the framebuffer in bytes
-            pitch: u16,
+            pitch: u64,
             /// Width of the framebuffer in pixels
-            width: u16,
+            width: u64,
             /// Height of the framebuffer in pixels
-            height: u16,
+            height: u64,
             /// Bits per pixel of the framebuffer
             bpp: u16,
             memory_model: MemoryModel,
