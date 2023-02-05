@@ -15,7 +15,7 @@ pub const Identifiers = struct {
     pub const EntryPoint = COMMON_MAGIC ++ .{ 0x13d86c035a1cd3e1, 0x2b0caa89d8f3026a };
     pub const KernelFile = COMMON_MAGIC ++ .{ 0xad97e90e83f1ed67, 0x31eb5d1c5ff23b69 };
     pub const Module = COMMON_MAGIC ++ .{ 0x3e7e279702be32af, 0xca1c4f3bd1280cee };
-    pub const Rdsp = COMMON_MAGIC ++ .{ 0xc5e77b6b397e7b43, 0x27637845accdcf3c };
+    pub const Rsdp = COMMON_MAGIC ++ .{ 0xc5e77b6b397e7b43, 0x27637845accdcf3c };
     pub const Smbios = COMMON_MAGIC ++ .{ 0x9e9046f11e095391, 0xaa4a520fefbde5ee };
     pub const EfiSystemTable = COMMON_MAGIC ++ .{ 0x5ceba5163eaaf6d6, 0x0a6981610cf65fcc };
     pub const BootTime = COMMON_MAGIC ++ .{ 0x502746e184c088aa, 0xfbc5ec83e6327893 };
@@ -498,6 +498,7 @@ pub const Smp = struct {
             /// A free for use field.
             extra_argument: u64,
         },
+        else => unreachable,
     };
 };
 
@@ -606,10 +607,10 @@ pub const Module = struct {
     };
 };
 
-pub const Rdsp = struct {
+pub const Rsdp = struct {
     pub const Request = extern struct {
         /// The ID of the request.
-        id: [4]u64 = Identifiers.Rdsp,
+        id: [4]u64 = Identifiers.Rsdp,
         /// The revision of the request that the kernel provides.
         revision: u64 = 0,
         /// The pointer to the response structure.
