@@ -714,8 +714,8 @@ pub const DeviceTree = struct {
     pub const Response = extern struct {
         /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
-        /// Virtual pointer to the device tree blob. null if not present.
-        address: ?u64 = null,
+        /// Virtual pointer to the device tree blob. 0 if not present.
+        address: u64 = 0,
     };
 };
 
