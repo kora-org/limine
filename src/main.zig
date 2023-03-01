@@ -20,7 +20,7 @@ pub const Identifiers = struct {
     pub const EfiSystemTable = COMMON_MAGIC ++ .{ 0x5ceba5163eaaf6d6, 0x0a6981610cf65fcc };
     pub const BootTime = COMMON_MAGIC ++ .{ 0x502746e184c088aa, 0xfbc5ec83e6327893 };
     pub const KernelAddress = COMMON_MAGIC ++ .{ 0x71ba76863cc55f63, 0xb2644a48c516a487 };
-    pub const Dtb = COMMON_MAGIC ++ .{ 0xb40ddb48fb54bac7, 0x545081493f81ffb7 };
+    pub const DeviceTree = COMMON_MAGIC ++ .{ 0xb40ddb48fb54bac7, 0x545081493f81ffb7 };
 };
 
 pub const Uuid = struct {
@@ -701,10 +701,10 @@ pub const KernelAddress = struct {
     };
 };
 
-pub const Dtb = struct {
+pub const DeviceTree = struct {
     pub const Request = extern struct {
         /// The ID of the request.
-        id: [4]u64 = Identifiers.Dtb,
+        id: [4]u64 = Identifiers.DeviceTree,
         /// The revision of the request that the kernel provides.
         revision: u64 = 0,
         /// The pointer to the response structure.
@@ -714,8 +714,8 @@ pub const Dtb = struct {
     pub const Response = extern struct {
         /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
-        /// Virtual pointer to the device tree blob. 0 if not present.
-        device_tree: u64 = null,
+        /// Virtual pointer to the device tree blob. null if not present.
+        address: ?u64 = null,
     };
 };
 
