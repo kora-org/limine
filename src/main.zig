@@ -153,14 +153,14 @@ pub const Framebuffer = struct {
         /// The ID of the request.
         id: [4]u64 = Identifiers.Framebuffer,
         /// The revision of the request that the kernel provides.
-        revision: u64 = 0,
+        revision: u64 = 1,
         /// The pointer to the response structure.
         response: ?*const Response = null,
     };
 
     pub const Response = extern struct {
         /// The revision of the response that the bootloader provides.
-        revision: u64 = 0,
+        revision: u64 = 1,
         /// How many framebuffers are present.
         framebuffer_count: u64,
         /// Pointer to an array of `framebuffer_count` pointers to `Fb`
