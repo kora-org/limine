@@ -40,8 +40,6 @@ pub const File = struct {
     /// The path of the file within the volume, with a leading slash.
     path: []const u8,
     /// A command line associated with the file.
-    // NOTE: this is stupid, who the hell wants to add a command line
-    // argument to a fricking file
     cmdline: []const u8,
     /// Type of media file resides on.
     media_type: MediaTypes,
@@ -76,6 +74,16 @@ pub const File = struct {
     /// Returns a slice of the file.
     pub fn getSlice(self: *const @This()) []const u8 {
         return @ptrCast([*]u8, self.base)[0..self.length];
+    }
+
+    /// Returns the Zig string version of the path.
+    pub fn getPath(self: *const @This()) [:0]const u8 {
+        return std.mem.sliceTo(self.path, 0);
+    }
+
+    /// Returns the Zig string version of the command line.
+    pub fn getCmdline(self: *const @This()) [:0]const u8 {
+        return std.mem.sliceTo(self.cmdline, 0);
     }
 };
 
@@ -533,7 +541,7 @@ pub const MemoryMap = struct {
         type: Types,
     };
 
-    pub const Types = enum(c_int) {
+    pub const Types = enum(u64) {
         Usable,
         Reserved,
         AcpiReclaimable,
@@ -589,6 +597,11 @@ pub const Module = struct {
         revision: u64 = 0,
         /// The pointer to the response structure.
         response: ?*const Response = null,
+        /// How many internal modules are passed by the kernel.
+        internal_module_count: u64,
+        /// Pointer to an array of `internal_module_count` pointers
+        /// to `InternalModule` structures.
+        internal_modules: [*]*InternalModule,
     };
 
     pub const Response = extern struct {
@@ -596,13 +609,36 @@ pub const Module = struct {
         revision: u64 = 0,
         /// How many modules are present.
         module_count: u64,
-        /// Pointer to an array of `modules_count` pointers to the currently
-        /// loaded modules.
+        /// Pointer to an array of `module_count` pointers to the
+        /// currently loaded modules.
         modules: [*]*File,
 
         /// Returns a slice of the `modules` array.
         pub fn getModules(self: *const @This()) []*File {
             return self.modules[0..self.module_count];
+        }
+    };
+
+    pub const InternalModule = extern struct {
+        /// The path of the file within the volume, with a leading slash.
+        path: []const u8,
+        /// A command line associated with the file.
+        cmdline: []const u8,
+        /// Flags changing module loading behaviour
+        flags: Flags,
+
+        pub const Flags = enum(u64) {
+            Required = (1 << 0),
+        };
+
+        /// Returns the Zig string version of the path.
+        pub fn getPath(self: *const @This()) [:0]const u8 {
+            return std.mem.sliceTo(self.path, 0);
+        }
+
+        /// Returns the Zig string version of the command line.
+        pub fn getCmdline(self: *const @This()) [:0]const u8 {
+            return std.mem.sliceTo(self.cmdline, 0);
         }
     };
 };
