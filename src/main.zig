@@ -168,7 +168,7 @@ pub const Framebuffer = struct {
 
     pub const Response = extern struct {
         /// The revision of the response that the bootloader provides.
-        revision: u64 = 0,
+        revision: u64 = 1,
         /// How many framebuffers are present.
         framebuffer_count: u64,
         /// Pointer to an array of `framebuffer_count` pointers to `Fb`
