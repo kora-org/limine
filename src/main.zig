@@ -629,10 +629,11 @@ pub const Module = struct {
         /// A command line associated with the file.
         cmdline: []const u8,
         /// Flags changing module loading behaviour
-        flags: Flags,
+        flags: Flags = .Optional,
 
         pub const Flags = enum(u64) {
-            Required = (1 << 0),
+            Optional = 0,
+            Required = 1,
         };
 
         /// Returns the Zig string version of the path.
