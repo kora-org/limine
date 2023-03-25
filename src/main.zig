@@ -168,7 +168,7 @@ pub const Framebuffer = struct {
 
     pub const Response = extern struct {
         /// The revision of the response that the bootloader provides.
-        revision: u64 = 1,
+        revision: u64 = 0,
         /// How many framebuffers are present.
         framebuffer_count: u64,
         /// Pointer to an array of `framebuffer_count` pointers to `Fb`
@@ -203,15 +203,17 @@ pub const Framebuffer = struct {
         edid_size: u64,
         edid: ?[*]const u8,
 
+        // Revision 1
         /// How many video modes are present
         mode_count: u64,
         /// Pointer to an array of `mode_count` pointers to `VideoMode`
         /// structures.
-        modes: [*]*VideoMode,
+        modes: ?[*]*VideoMode,
 
         /// Returns a slice of the `modes` array.
-        pub fn getVideoModes(self: *const @This()) []*VideoMode {
-            return self.modes[0..self.mode_count];
+        pub fn getVideoModes(self: *const @This()) ?[]*VideoMode {
+            if (self.modes) |modes|
+                return modes[0..self.mode_count];
         }
 
         pub const VideoMode = extern struct {
@@ -597,11 +599,13 @@ pub const Module = struct {
         revision: u64 = 0,
         /// The pointer to the response structure.
         response: ?*const Response = null,
+
+        // Revision 1
         /// How many internal modules are passed by the kernel.
-        internal_module_count: u64,
+        internal_module_count: u64 = 0,
         /// Pointer to an array of `internal_module_count` pointers
         /// to `InternalModule` structures.
-        internal_modules: [*]*InternalModule,
+        internal_modules: ?[*]*InternalModule = null,
     };
 
     pub const Response = extern struct {
