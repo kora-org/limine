@@ -4,14 +4,10 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const lib = b.addStaticLibrary(.{
+    b.addModule(.{
         .name = "limine",
-        .root_source_file = .{ .path = "src/main.zig" },
-        .target = target,
-        .optimize = optimize,
+        .source_file = .{ .path = "src/main.zig" },
     });
-
-    lib.install();
 
     const main_tests = b.addTest(.{
         .root_source_file = .{ .path = "src/main.zig" },
