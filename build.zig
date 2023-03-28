@@ -4,8 +4,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    b.addModule(.{
-        .name = "limine",
+    _ = b.addModule("limine", .{
         .source_file = .{ .path = "src/main.zig" },
     });
 
