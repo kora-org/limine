@@ -254,6 +254,7 @@ pub const Framebuffer = struct {
     };
 };
 
+/// Deprecated, use [flanterm](https://github.com/mintsuki/flanterm).
 pub const Terminal = struct {
     pub const Request = extern struct {
         /// The ID of the request.
