@@ -235,7 +235,7 @@ pub const Framebuffer = struct {
         };
 
         /// Returns a slice of the `address` pointer.
-        pub fn getSlice(self: *const @This(), T: type) []T {
+        pub fn getSlice(self: *const @This(), comptime T: type) []T {
             return @intToPtr([*]T, self.address)[0 .. (self.pitch / @sizeOf(T)) * self.width];
         }
 
