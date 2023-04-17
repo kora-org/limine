@@ -235,8 +235,8 @@ pub const Framebuffer = struct {
         };
 
         /// Returns a slice of the `address` pointer.
-        pub fn getSlice(self: *const @This()) []u8 {
-            return @intToPtr([*]u8, self.address)[0 .. self.pitch * self.width];
+        pub fn getSlice(self: *const @This(), T: type) []T {
+            return @intToPtr([*]T, self.address)[0 .. (self.pitch / @sizeOf(T)) * self.width];
         }
 
         /// Returns the EDID data.
