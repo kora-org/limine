@@ -8,7 +8,7 @@ pub const Identifiers = struct {
     pub const StackSize = COMMON_MAGIC ++ .{ 0x224ef0460a8e8926, 0xe1cb0fc25f46ea3d };
     pub const Hhdm = COMMON_MAGIC ++ .{ 0x48dcf1cb8ad2b852, 0x63984e959a98244b };
     pub const Framebuffer = COMMON_MAGIC ++ .{ 0x9d5827dcd881dd75, 0xa3148604f6fab11b };
-    pub const Terminal = COMMON_MAGIC ++ .{ 0xc8ac59310c2b0844, 0xa68d0c7265d38878 };
+    pub const PagingLevel = COMMON_MAGIC ++ .{ 0x95c1a0edab0944cb, 0xa4e5cb3842f7488a };
     pub const FiveLevelPaging = COMMON_MAGIC ++ .{ 0x94469551da9b3192, 0xebe5e86db7382888 };
     pub const Smp = COMMON_MAGIC ++ .{ 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 };
     pub const MemoryMap = COMMON_MAGIC ++ .{ 0x67cf3d9d378a806f, 0xe304acdfc50c3c62 };
@@ -73,7 +73,7 @@ pub const File = struct {
 
     /// Returns a slice of the file.
     pub fn getSlice(self: *const @This()) []const u8 {
-        return @ptrCast([*]u8, self.base)[0..self.length];
+        return @as([*]u8, @ptrCast(self.base))[0..self.length];
     }
 
     /// Returns the Zig string version of the path.
@@ -236,7 +236,7 @@ pub const Framebuffer = struct {
 
         /// Returns a slice of the `address` pointer.
         pub fn getSlice(self: *const @This(), comptime T: type) []T {
-            return @intToPtr([*]T, self.address)[0 .. (self.pitch / @sizeOf(T)) * self.width];
+            return @as([*]T, @ptrFromInt(self.address))[0 .. (self.pitch / @sizeOf(T)) * self.width];
         }
 
         /// Returns the EDID data.
@@ -255,158 +255,50 @@ pub const Framebuffer = struct {
 };
 
 /// Deprecated, use [flanterm](https://github.com/mintsuki/flanterm).
-pub const Terminal = struct {
+pub const Terminal = @compileError("Deprecated, use [flanterm](https://github.com/mintsuki/flanterm).");
+
+pub const PagingMode = struct {
     pub const Request = extern struct {
         /// The ID of the request.
-        id: [4]u64 = Identifiers.Terminal,
+        id: [4]u64 = Identifiers.PagingMode,
         /// The revision of the request that the kernel provides.
         revision: u64 = 0,
         /// The pointer to the response structure.
         response: ?*const Response = null,
-        /// Pointer to the callback function.
-        callback: ?*const fn (?*Term, u64, u64, u64, u64) void = null,
+        /// The paging mode the kernel will use
+        mode: Mode = switch (builtin.cpu.arch) {
+            .x86_64, .aarch64 => .FourLevel,
+            .riscv64 => .Sv48,
+            else => unreachable,
+        },
+        /// Flags that literally does nothing. I don't know why the hell
+        /// is it included even though there's no flags in the first place
+        /// but it's mintsuki's decision and not mine so.
+        flags: u64 = 0,
     };
 
     pub const Response = extern struct {
         /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
-        /// How many terminals are present.
-        terminal_count: u64,
-        /// Pointer to an array of `terminal_count` pointers to `Term`
-        /// structures.
-        terminals: [*]*Term,
-        /// Physical pointer to the terminal write() function.
-        write_fn: *const fn (term: ?*Term, ptr: [*]const u8, length: u64) callconv(.C) void,
-
-        /// Returns a slice of the `terminals` array.
-        pub fn getTerminals(self: *const @This()) []*Term {
-            return self.terminals[0..self.terminal_count];
-        }
-
-        /// Returns a writer of a terminal.
-        pub fn writer(self: Response, terminal: ?*Term) Term.Writer {
-            return Term.Writer{ .context1 = self, .context2 = terminal };
-        }
-
-        pub fn write(self: Response, terminal: ?*Term, bytes: []const u8) void {
-            _ = try self.writer(terminal).write(bytes);
-        }
-
-        pub fn print(self: Response, terminal: ?*Term, comptime format: []const u8, args: anytype) void {
-            _ = try self.writer(terminal).print(format, args);
-        }
     };
 
-    pub const Term = extern struct {
-        columns: u32,
-        rows: u32,
-        /// The framebuffer associated with this terminal.
-        framebuffer: *Framebuffer.Fb,
-
-        pub const Writer = struct {
-            context1: Response,
-            context2: ?*Term,
-            pub const Error = error{};
-
-            pub fn write(self: @This(), bytes: []const u8) !usize {
-                self.context1.write_fn(self.context2, bytes.ptr, bytes.len);
-                return bytes.len;
-            }
-
-            pub fn writeAll(self: @This(), bytes: []const u8) !void {
-                _ = try self.write(bytes);
-            }
-
-            pub fn print(self: @This(), comptime format: []const u8, args: anytype) !void {
-                return std.fmt.format(self, format, args);
-            }
-
-            pub fn writeByte(self: @This(), byte: u8) !void {
-                _ = try self.write(&[_]u8{byte});
-            }
-
-            pub fn writeByteNTimes(self: @This(), byte: u8, n: usize) !void {
-                var bytes: [256]u8 = undefined;
-                std.mem.set(u8, bytes[0..], byte);
-
-                var remaining: usize = n;
-                while (remaining > 0) {
-                    const to_write = std.math.min(remaining, bytes.len);
-                    try self.writeAll(bytes[0..to_write]);
-                    remaining -= to_write;
-                }
-            }
-        };
-    };
-
-    pub const CallbackTypes = enum(u64) {
-        /// This callback is triggered whenever a DEC Private Mode
-        /// (DECSET/DECRST) sequence is encountered that the terminal
-        /// cannot handle alone. The arguments to this callback are:
-        /// `terminal`, `type`, `values_count`, `values`, and `final`.
-        Dec = 10,
-        /// This callback is triggered whenever a bell event is determined
-        /// to be necessary (such as when a bell character \a is
-        /// encountered). The arguments to this callback are: `terminal`
-        /// and `type`.
-        Bell = 20,
-        /// This callback is triggered whenever the kernel has to respond
-        /// to a DEC private identification request. The arguments to this
-        /// callback are: `terminal` and `type`.
-        PrivateId = 30,
-        /// This callback is triggered whenever the kernel has to respond
-        /// to a ECMA-48 status report request. The arguments to this
-        /// callback are: `terminal` and `type`.
-        StatusReport = 40,
-        /// This callback is triggered whenever the kernel has to respond
-        /// to a ECMA-48 cursor position report request. The arguments to
-        /// this callback are: `terminal`, `type`, `x`, and `y`. Where `x`
-        /// and `y` represent the cursor position at the time the callback
-        /// is triggered.
-        PositionReport = 50,
-        /// This callback is triggered whenever the kernel has to respond
-        /// to a keyboard LED state change request. The arguments to this
-        /// callback are: `terminal`, `type`, and `led_state`. `led_state`
-        /// can have one of the following values: 0, 1, 2, or 3. These
-        /// values mean: clear all LEDs, set scroll lock, set num lock,
-        /// and set caps lock LED, respectively.
-        KeyboardLed = 60,
-        /// This callback is triggered whenever an ECMA-48 Mode Switch
-        /// sequence is encountered that the terminal cannot handle alone.
-        /// The arguments to this callback are: `terminal`, `type`,
-        /// `values_count`, `values`, and `final`.
-        ModeSwitch = 70,
-        /// This callback is triggered whenever a private Linux escape
-        /// sequence is encountered that the terminal cannot handle alone.
-        /// The arguments to this callback are: `terminal`, `type`,
-        /// `values_count`, and `values`.
-        Linux = 80,
-    };
-
-    /// The write() function can additionally be used to set and restore
-    /// terminal context, and refresh the terminal fully.
-    ///
-    /// In order to achieve this, special values for the length argument
-    /// are passed. These values are:
-    pub const ContextControl = enum(u64) {
-        /// For `Size`, the `ptr` variable has to point to a location to
-        /// which the terminal will write a single `u64` which contains
-        /// the size of the terminal context.
-        Size = @bitCast(u64, @as(i64, -1)),
-        Save = @bitCast(u64, @as(i64, -2)),
-        /// For `Save` and `Restore`, the `ptr` variable has to point to
-        /// a location to which the terminal will save or restore its
-        /// context from, respectively. This location must have a size
-        /// congruent to the value received from `Size`.
-        Restore = @bitCast(u64, @as(i64, -3)),
-        /// For FullRefresh, the `ptr` variable is unused. This routine
-        /// is to be used after control of the framebuffer is taken over
-        /// and the bootloader's terminal has to fully repaint the
-        /// framebuffer to avoid inconsistencies.
-        FullRefresh = @bitCast(u64, @as(i64, -4)),
+    pub const Mode = switch (builtin.cpu.arch) {
+        .x86_64, .aarch64 => enum(u64) {
+            /// 4-level paging
+            FourLevel,
+            /// 5-level paging
+            FiveLevel,
+        },
+        .riscv64 => enum(u64) {
+            Sv32,
+            Sv48,
+            Sv57,
+        },
+        else => unreachable,
     };
 };
 
+/// Deprecated, use `PagingMode` instead.
 pub const FiveLevelPaging = struct {
     pub const Request = extern struct {
         /// The ID of the request.
@@ -431,7 +323,7 @@ pub const Smp = struct {
         revision: u64 = 0,
         /// The pointer to the response structure.
         response: ?*const Response = null,
-        /// Bit 0: Enable X2APIC, if possible.
+        /// Bit 0: Enable X2APIC, if possible. (x86-64 only)
         flags: u64 = 0,
     };
 
@@ -460,9 +352,29 @@ pub const Smp = struct {
             revision: u64 = 0,
             /// Always zero.
             flags: u32,
-            /// MPIDR of the bootstrap processor (as read from
-            /// `MPIDR_EL1`, with Res1 masked off).
+            /// MPIDR of the bootstrap processor (as read from `MPIDR_EL1`,
+            /// with Res1 masked off).
             bsp_mpidr: u64,
+            /// How many CPUs are present. It includes the bootstrap
+            /// processor.
+            cpu_count: u64,
+            /// Pointer to an array of `cpu_count` pointers to `Cpu`
+            /// structures.
+            cpus: [*]*Cpu,
+
+            /// Returns a slice of the `cpus` array.
+            pub fn getCpus(self: *const @This()) []*Cpu {
+                return self.cpus[0..self.cpu_count];
+            }
+        },
+        .ricsv64 => extern struct {
+            /// The revision of the response that the bootloader provides.
+            revision: u64 = 0,
+            /// Always zero.
+            flags: u32,
+            /// Hart ID of the bootstrap processor as reported by the UEFI
+            /// RISC-V Boot Protocol or the SBI.
+            bsp_hart_id: u64,
             /// How many CPUs are present. It includes the bootstrap
             /// processor.
             cpu_count: u64,
@@ -501,6 +413,21 @@ pub const Smp = struct {
             /// MPIDR of the processor as specified by the MADT or device
             /// tree
             mpidr: u64,
+            reserved: u64,
+            /// An atomic write to this field causes the parked CPU to
+            /// jump to the written address, on a 64KiB (or Stack Size
+            /// Request size) stack.
+            goto: *const fn (*Cpu) callconv(.C) void,
+            /// A free for use field.
+            extra_argument: u64,
+        },
+        .riscv64 => extern struct {
+            /// ACPI Processor UID as specified by the MADT (always 0 on
+            /// non-ACPI systems).
+            processor_id: u32,
+            /// Hart ID of the processor as specified by the MADT or
+            /// device tree.
+            hart_id: u64,
             reserved: u64,
             /// An atomic write to this field causes the parked CPU to
             /// jump to the written address, on a 64KiB (or Stack Size
@@ -629,7 +556,7 @@ pub const Module = struct {
         path: []const u8,
         /// A command line associated with the file.
         cmdline: []const u8,
-        /// Flags changing module loading behaviour
+        /// Flags changing module loading behavior.
         flags: Flags = .Optional,
 
         pub const Flags = enum(u64) {
