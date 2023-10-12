@@ -8,7 +8,7 @@ pub const Identifiers = struct {
     pub const StackSize = COMMON_MAGIC ++ .{ 0x224ef0460a8e8926, 0xe1cb0fc25f46ea3d };
     pub const Hhdm = COMMON_MAGIC ++ .{ 0x48dcf1cb8ad2b852, 0x63984e959a98244b };
     pub const Framebuffer = COMMON_MAGIC ++ .{ 0x9d5827dcd881dd75, 0xa3148604f6fab11b };
-    pub const PagingLevel = COMMON_MAGIC ++ .{ 0x95c1a0edab0944cb, 0xa4e5cb3842f7488a };
+    pub const PagingMode = COMMON_MAGIC ++ .{ 0x95c1a0edab0944cb, 0xa4e5cb3842f7488a };
     pub const FiveLevelPaging = COMMON_MAGIC ++ .{ 0x94469551da9b3192, 0xebe5e86db7382888 };
     pub const Smp = COMMON_MAGIC ++ .{ 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 };
     pub const MemoryMap = COMMON_MAGIC ++ .{ 0x67cf3d9d378a806f, 0xe304acdfc50c3c62 };
@@ -628,7 +628,7 @@ pub const EfiSystemTable = struct {
         /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
         /// Pointer to the EFI system table. `null` if not present.
-        system_table: ?*std.os.uefi.SystemTable = null,
+        system_table: ?*std.os.uefi.tables.SystemTable = null,
     };
 };
 
@@ -691,8 +691,25 @@ pub const DeviceTree = struct {
 test "docs" {
     // this is a dummy test function for docs generation
     // im too lazy to write actual tests
-}
 
-comptime {
-    std.testing.refAllDecls(@This());
+    // society if refAllDecls ignores user-defined @compilerErrors: (insert picture of a hyperfuturistic city here)
+    //std.testing.refAllDecls(@This());
+
+    _ = BootloaderInfo{};
+    _ = StackSize{};
+    _ = Hhdm{};
+    _ = Framebuffer{};
+    _ = PagingMode{};
+    _ = FiveLevelPaging{};
+    _ = Smp{};
+    _ = MemoryMap{};
+    _ = EntryPoint{};
+    _ = KernelFile{};
+    _ = Module{};
+    _ = Rsdp{};
+    _ = Smbios{};
+    _ = EfiSystemTable{};
+    _ = BootTime{};
+    _ = KernelAddress{};
+    _ = DeviceTree{};
 }
