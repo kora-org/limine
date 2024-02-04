@@ -1,6 +1,0 @@
-id: jym0loemma6btfyeq36vtc5b9jr8m27azvzvscakes04qbem
-name: limine
-main: src/main.zig
-license: BSD-2-Clause
-description: Zig bindings of the Limine boot protocol
-dependencies:
