@@ -9,7 +9,6 @@ pub const Identifiers = struct {
     pub const Hhdm = COMMON_MAGIC ++ .{ 0x48dcf1cb8ad2b852, 0x63984e959a98244b };
     pub const Framebuffer = COMMON_MAGIC ++ .{ 0x9d5827dcd881dd75, 0xa3148604f6fab11b };
     pub const PagingMode = COMMON_MAGIC ++ .{ 0x95c1a0edab0944cb, 0xa4e5cb3842f7488a };
-    pub const FiveLevelPaging = COMMON_MAGIC ++ .{ 0x94469551da9b3192, 0xebe5e86db7382888 };
     pub const Smp = COMMON_MAGIC ++ .{ 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 };
     pub const MemoryMap = COMMON_MAGIC ++ .{ 0x67cf3d9d378a806f, 0xe304acdfc50c3c62 };
     pub const EntryPoint = COMMON_MAGIC ++ .{ 0x13d86c035a1cd3e1, 0x2b0caa89d8f3026a };
@@ -18,6 +17,7 @@ pub const Identifiers = struct {
     pub const Rsdp = COMMON_MAGIC ++ .{ 0xc5e77b6b397e7b43, 0x27637845accdcf3c };
     pub const Smbios = COMMON_MAGIC ++ .{ 0x9e9046f11e095391, 0xaa4a520fefbde5ee };
     pub const EfiSystemTable = COMMON_MAGIC ++ .{ 0x5ceba5163eaaf6d6, 0x0a6981610cf65fcc };
+    pub const EfiMemoryMap = COMMON_MAGIC ++ .{ 0x7df62a431d6872d5, 0xa4fcdfb3e57306c8 };
     pub const BootTime = COMMON_MAGIC ++ .{ 0x502746e184c088aa, 0xfbc5ec83e6327893 };
     pub const KernelAddress = COMMON_MAGIC ++ .{ 0x71ba76863cc55f63, 0xb2644a48c516a487 };
     pub const DeviceTree = COMMON_MAGIC ++ .{ 0xb40ddb48fb54bac7, 0x545081493f81ffb7 };
@@ -254,9 +254,6 @@ pub const Framebuffer = struct {
     };
 };
 
-/// Deprecated, use [flanterm](https://github.com/mintsuki/flanterm).
-pub const Terminal = @compileError("Deprecated, use [flanterm](https://github.com/mintsuki/flanterm).");
-
 pub const PagingMode = struct {
     pub const Request = extern struct {
         /// The ID of the request.
@@ -295,23 +292,6 @@ pub const PagingMode = struct {
             Sv57,
         },
         else => unreachable,
-    };
-};
-
-/// Deprecated, use `PagingMode` instead.
-pub const FiveLevelPaging = struct {
-    pub const Request = extern struct {
-        /// The ID of the request.
-        id: [4]u64 = Identifiers.FiveLevelPaging,
-        /// The revision of the request that the kernel provides.
-        revision: u64 = 0,
-        /// The pointer to the response structure.
-        response: ?*const Response = null,
-    };
-
-    pub const Response = extern struct {
-        /// The revision of the response that the bootloader provides.
-        revision: u64 = 0,
     };
 };
 
@@ -557,11 +537,12 @@ pub const Module = struct {
         /// A command line associated with the file.
         cmdline: []const u8,
         /// Flags changing module loading behavior.
-        flags: Flags = .Optional,
+        flags: Flags = .{},
 
-        pub const Flags = enum(u64) {
-            Optional = 0,
-            Required = 1,
+        pub const Flags = packed struct {
+            Required: bool = 0,
+            // Revision 2
+            Compressed: bool = 0,
         };
 
         /// Returns the Zig string version of the path.
@@ -632,6 +613,30 @@ pub const EfiSystemTable = struct {
     };
 };
 
+pub const EfiMemoryMap = struct {
+    pub const Request = extern struct {
+        /// The ID of the request.
+        id: [4]u64 = Identifiers.EfiMemoryMap,
+        /// The revision of the request that the kernel provides.
+        revision: u64 = 0,
+        /// The pointer to the response structure.
+        response: ?*const Response = null,
+    };
+
+    pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
+        revision: u64 = 0,
+        /// Pointer (HHDM) to the EFI memory map.
+        memmap: [*]std.os.uefi.tables.MemoryDescriptor,
+        /// Size in bytes of the EFI memory map.
+        memmap_size: u64,
+        /// EFI memory map descriptor size in bytes.
+        desc_size: u64,
+        /// Version of EFI memory map descriptors.
+        desc_version: u64,
+    };
+};
+
 pub const BootTime = struct {
     pub const Request = extern struct {
         /// The ID of the request.
@@ -692,24 +697,5 @@ test "docs" {
     // this is a dummy test function for docs generation
     // im too lazy to write actual tests
 
-    // society if refAllDecls ignores user-defined @compilerErrors: (insert picture of a hyperfuturistic city here)
-    //std.testing.refAllDecls(@This());
-
-    _ = BootloaderInfo{};
-    _ = StackSize{};
-    _ = Hhdm{};
-    _ = Framebuffer{};
-    _ = PagingMode{};
-    _ = FiveLevelPaging{};
-    _ = Smp{};
-    _ = MemoryMap{};
-    _ = EntryPoint{};
-    _ = KernelFile{};
-    _ = Module{};
-    _ = Rsdp{};
-    _ = Smbios{};
-    _ = EfiSystemTable{};
-    _ = BootTime{};
-    _ = KernelAddress{};
-    _ = DeviceTree{};
+    std.testing.refAllDecls(@This());
 }
