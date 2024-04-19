@@ -347,7 +347,7 @@ pub const Smp = struct {
                 return self.cpus[0..self.cpu_count];
             }
         },
-        .ricsv64 => extern struct {
+        .riscv64 => extern struct {
             /// The revision of the response that the bootloader provides.
             revision: u64 = 0,
             /// Always zero.
