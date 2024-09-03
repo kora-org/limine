@@ -5,6 +5,7 @@ pub const COMMON_MAGIC = .{ 0xc7b1dd30df4c8b88, 0x0a82e883a194f07b };
 
 pub const Identifiers = struct {
     pub const BootloaderInfo = COMMON_MAGIC ++ .{ 0xf55038d8e2a1202f, 0x279426fcf5f59740 };
+    pub const FirmwareType = COMMON_MAGIC ++ .{ 0x8c2f75d90bef28a8, 0x7045a4688eac00c3 };
     pub const StackSize = COMMON_MAGIC ++ .{ 0x224ef0460a8e8926, 0xe1cb0fc25f46ea3d };
     pub const Hhdm = COMMON_MAGIC ++ .{ 0x48dcf1cb8ad2b852, 0x63984e959a98244b };
     pub const Framebuffer = COMMON_MAGIC ++ .{ 0x9d5827dcd881dd75, 0xa3148604f6fab11b };
@@ -116,6 +117,28 @@ pub const BootloaderInfo = struct {
         pub fn getVersion(self: *const @This()) [:0]const u8 {
             return std.mem.sliceTo(self.version, 0);
         }
+    };
+};
+
+pub const FirmwareType = struct {
+    pub const Request = extern struct {
+        /// The ID of the request.
+        id: [4]u64 = Identifiers.FirmwareType,
+        /// The revision of the request that the kernel provides.
+        revision: u64 = 0,
+    };
+
+    pub const Response = extern struct {
+        /// The revision of the response that the bootloader provides.
+        revision: u64 = 0,
+        /// The firmware type used by the bootloader
+        type: Type = .X86Bios,
+    };
+
+    pub const Type = enum(u64) {
+        X86Bios = 0,
+        Uefi32 = 1,
+        Uefi64 = 2,
     };
 };
 
@@ -268,10 +291,20 @@ pub const PagingMode = struct {
             .riscv64 => .Sv48,
             else => unreachable,
         },
-        /// Flags that literally does nothing. I don't know why the hell
-        /// is it included even though there's no flags in the first place
-        /// but it's mintsuki's decision and not mine so.
-        flags: u64 = 0,
+
+        // Revision 1
+        /// The highest paging mode in numerical order that the OS supports.
+        max_mode: Mode = switch (builtin.cpu.arch) {
+            .x86_64, .aarch64 => .FiveLevel,
+            .riscv64 => .Sv57,
+            else => unreachable,
+        },
+        /// The lowest paging mode in numerical order that the OS supports.
+        min_mode: Mode = switch (builtin.cpu.arch) {
+            .x86_64, .aarch64 => .FourLevel,
+            .riscv64 => .Sv48,
+            else => unreachable,
+        },
     };
 
     pub const Response = extern struct {
@@ -627,7 +660,7 @@ pub const EfiMemoryMap = struct {
         /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
         /// Pointer (HHDM) to the EFI memory map.
-        memmap: [*]std.os.uefi.tables.MemoryDescriptor,
+        memmap: *std.os.uefi.tables.MemoryDescriptor,
         /// Size in bytes of the EFI memory map.
         memmap_size: u64,
         /// EFI memory map descriptor size in bytes.
