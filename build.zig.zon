@@ -1,5 +1,10 @@
 .{
-    .name = "limine",
+    .name = .limine,
     .version = "0.1.0",
-    .paths = .{""},
+    .fingerprint = 0x123a77310abd7ef7,
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
 }

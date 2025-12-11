@@ -4,14 +4,14 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    _ = b.addModule("limine", .{
-        .root_source_file = b.path("src/main.zig"),
-    });
-
-    const main_tests = b.addTest(.{
+    const limine = b.addModule("limine", .{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
+    });
+
+    const main_tests = b.addTest(.{
+        .root_module = limine,
     });
 
     const test_step = b.step("test", "Run library tests");
