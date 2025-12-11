@@ -1,0 +1,38 @@
+when:
+  branch:
+    exclude: pages
+  event: [push, pull_request]
+
+clone:
+  git:
+    image: woodpeckerci/plugin-git
+    settings:
+      recursive: true
+
+steps:
+  build:
+    image: ziglings/ziglang:latest
+    commands:
+      - zig build docs
+    when:
+      event: [pull_request, push]
+
+  publish:
+    image: alpine/git
+    environment:
+      MAIL:
+        from_secret: mail
+      CODEBERG_TOKEN:
+        from_secret: codeberg_token
+    commands:
+      - git config --global user.email $MAIL
+      - git config --global user.name "Woodpecker CI"
+      - git clone -b pages https://$CODEBERG_TOKEN@codeberg.org/$CI_REPO.git $CI_REPO_NAME
+      - cp -ar zig-out/docs $CI_REPO_NAME/
+      - cp .domains $CI_REPO_NAME || true
+      - cd $CI_REPO_NAME
+      - git add .
+      - git commit -m "Woodpecker CI ${CI_COMMIT_SHA}"
+      - git push
+    when:
+      event: push
