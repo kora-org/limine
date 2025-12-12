@@ -1,49 +1,49 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-pub const COMMON_MAGIC = .{ 0xc7b1dd30df4c8b88, 0x0a82e883a194f07b };
+pub const common_magic = .{ 0xc7b1dd30df4c8b88, 0x0a82e883a194f07b };
 
-pub const REQUESTS_START_MARKER = .{ 0xf6b8f4b39de7d1ae, 0xfab91a6940fcb9cf, 0x785c6ed015d3e316, 0x181e920a7852b9d9 };
-pub const REQUESTS_END_MARKER = .{ 0xadc0e0531bb10d03, 0x9572709f31764c62 };
+pub const requests_start_marker: [4]u64 = .{ 0xf6b8f4b39de7d1ae, 0xfab91a6940fcb9cf, 0x785c6ed015d3e316, 0x181e920a7852b9d9 };
+pub const requests_end_marker: [2]u64 = .{ 0xadc0e0531bb10d03, 0x9572709f31764c62 };
 
 pub inline fn baseRevision(n: comptime_int) [3]u64 {
-    return .{ 0xf9562b2d5c95a6c8, 0x6a7b384944536bdc, @intCast(n) };
+    return .{ 0xf9562b2d5c95a6c8, 0x6a7b384944536bdc, n };
 }
 
-pub inline fn baseRevisionSupported(rev: [3]u64) bool {
+pub inline fn baseRevisionSupported(rev: []u64) bool {
     return rev[2] == 0;
 }
 
-pub inline fn loadedBaseRevisionValid(rev: [3]u64) bool {
+pub inline fn loadedBaseRevisionValid(rev: []u64) bool {
     return rev[1] != 0x6a7b384944536bdc;
 }
 
-pub inline fn loadedBaseRevision(rev: [3]u64) u64 {
+pub inline fn loadedBaseRevision(rev: []u64) u64 {
     return rev[1];
 }
 
 pub const Identifiers = struct {
-    pub const BootloaderInfo = COMMON_MAGIC ++ .{ 0xf55038d8e2a1202f, 0x279426fcf5f59740 };
-    pub const ExecutableCmdline = COMMON_MAGIC ++ .{ 0x4b161536e598651e, 0xb390ad4a2f1f303a };
-    pub const FirmwareType = COMMON_MAGIC ++ .{ 0x8c2f75d90bef28a8, 0x7045a4688eac00c3 };
-    pub const StackSize = COMMON_MAGIC ++ .{ 0x224ef0460a8e8926, 0xe1cb0fc25f46ea3d };
-    pub const Hhdm = COMMON_MAGIC ++ .{ 0x48dcf1cb8ad2b852, 0x63984e959a98244b };
-    pub const Framebuffer = COMMON_MAGIC ++ .{ 0x9d5827dcd881dd75, 0xa3148604f6fab11b };
-    pub const PagingMode = COMMON_MAGIC ++ .{ 0x95c1a0edab0944cb, 0xa4e5cb3842f7488a };
-    pub const Multiprocessor = COMMON_MAGIC ++ .{ 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 };
-    pub const MemoryMap = COMMON_MAGIC ++ .{ 0x67cf3d9d378a806f, 0xe304acdfc50c3c62 };
-    pub const EntryPoint = COMMON_MAGIC ++ .{ 0x13d86c035a1cd3e1, 0x2b0caa89d8f3026a };
-    pub const ExecutableFile = COMMON_MAGIC ++ .{ 0xad97e90e83f1ed67, 0x31eb5d1c5ff23b69 };
-    pub const Module = COMMON_MAGIC ++ .{ 0x3e7e279702be32af, 0xca1c4f3bd1280cee };
-    pub const Rsdp = COMMON_MAGIC ++ .{ 0xc5e77b6b397e7b43, 0x27637845accdcf3c };
-    pub const Smbios = COMMON_MAGIC ++ .{ 0x9e9046f11e095391, 0xaa4a520fefbde5ee };
-    pub const EfiSystemTable = COMMON_MAGIC ++ .{ 0x5ceba5163eaaf6d6, 0x0a6981610cf65fcc };
-    pub const EfiMemoryMap = COMMON_MAGIC ++ .{ 0x7df62a431d6872d5, 0xa4fcdfb3e57306c8 };
-    pub const DateAtBoot = COMMON_MAGIC ++ .{ 0x502746e184c088aa, 0xfbc5ec83e6327893 };
-    pub const ExecutableAddress = COMMON_MAGIC ++ .{ 0x71ba76863cc55f63, 0xb2644a48c516a487 };
-    pub const DeviceTree = COMMON_MAGIC ++ .{ 0xb40ddb48fb54bac7, 0x545081493f81ffb7 };
-    pub const RiscvBspHartId = COMMON_MAGIC ++ .{ 0x1369359f025525f9, 0x2ff2a56178391bb6 };
-    pub const BootloaderPerformance = COMMON_MAGIC ++ .{ 0x6b50ad9bf36d13ad, 0xdc4c7e88fc759e17 };
+    pub const BootloaderInfo = common_magic ++ .{ 0xf55038d8e2a1202f, 0x279426fcf5f59740 };
+    pub const ExecutableCmdline = common_magic ++ .{ 0x4b161536e598651e, 0xb390ad4a2f1f303a };
+    pub const FirmwareType = common_magic ++ .{ 0x8c2f75d90bef28a8, 0x7045a4688eac00c3 };
+    pub const StackSize = common_magic ++ .{ 0x224ef0460a8e8926, 0xe1cb0fc25f46ea3d };
+    pub const Hhdm = common_magic ++ .{ 0x48dcf1cb8ad2b852, 0x63984e959a98244b };
+    pub const Framebuffer = common_magic ++ .{ 0x9d5827dcd881dd75, 0xa3148604f6fab11b };
+    pub const PagingMode = common_magic ++ .{ 0x95c1a0edab0944cb, 0xa4e5cb3842f7488a };
+    pub const Multiprocessor = common_magic ++ .{ 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 };
+    pub const MemoryMap = common_magic ++ .{ 0x67cf3d9d378a806f, 0xe304acdfc50c3c62 };
+    pub const EntryPoint = common_magic ++ .{ 0x13d86c035a1cd3e1, 0x2b0caa89d8f3026a };
+    pub const ExecutableFile = common_magic ++ .{ 0xad97e90e83f1ed67, 0x31eb5d1c5ff23b69 };
+    pub const Module = common_magic ++ .{ 0x3e7e279702be32af, 0xca1c4f3bd1280cee };
+    pub const Rsdp = common_magic ++ .{ 0xc5e77b6b397e7b43, 0x27637845accdcf3c };
+    pub const Smbios = common_magic ++ .{ 0x9e9046f11e095391, 0xaa4a520fefbde5ee };
+    pub const EfiSystemTable = common_magic ++ .{ 0x5ceba5163eaaf6d6, 0x0a6981610cf65fcc };
+    pub const EfiMemoryMap = common_magic ++ .{ 0x7df62a431d6872d5, 0xa4fcdfb3e57306c8 };
+    pub const DateAtBoot = common_magic ++ .{ 0x502746e184c088aa, 0xfbc5ec83e6327893 };
+    pub const ExecutableAddress = common_magic ++ .{ 0x71ba76863cc55f63, 0xb2644a48c516a487 };
+    pub const DeviceTree = common_magic ++ .{ 0xb40ddb48fb54bac7, 0x545081493f81ffb7 };
+    pub const RiscvBspHartId = common_magic ++ .{ 0x1369359f025525f9, 0x2ff2a56178391bb6 };
+    pub const BootloaderPerformance = common_magic ++ .{ 0x6b50ad9bf36d13ad, 0xdc4c7e88fc759e17 };
 };
 
 pub const Uuid = struct {
@@ -89,9 +89,9 @@ pub const File = struct {
     part_uuid: Uuid,
 
     pub const MediaTypes = enum(u32) {
-        Generic,
-        Optical,
-        Tftp,
+        generic,
+        optical,
+        tftp,
     };
 
     /// Returns a slice of the file.
@@ -179,14 +179,14 @@ pub const FirmwareType = struct {
         /// The revision of the response that the bootloader provides.
         revision: u64 = 0,
         /// The firmware type used by the bootloader
-        type: Type = .X86Bios,
+        type: Type = .x86_bios,
     };
 
     pub const Type = enum(u64) {
-        X86Bios = 0,
-        Uefi32 = 1,
-        Uefi64 = 2,
-        Sbi = 3,
+        x86_bios = 0,
+        uefi32 = 1,
+        uefi64 = 2,
+        sbi = 3,
     };
 };
 
@@ -319,7 +319,7 @@ pub const Framebuffer = struct {
         }
 
         pub const MemoryModel = enum(u8) {
-            Rgb = 1,
+            rgb = 1,
             _,
         };
     };
@@ -335,23 +335,23 @@ pub const PagingMode = struct {
         response: ?*const Response = null,
         /// The paging mode the kernel will use
         mode: Mode = switch (builtin.cpu.arch) {
-            .x86_64, .aarch64, .loongarch64 => .FourLevel,
-            .riscv64 => .Sv48,
+            .x86_64, .aarch64, .loongarch64 => .four_level,
+            .riscv64 => .sv48,
             else => unreachable,
         },
 
         // Revision 1
         /// The highest paging mode in numerical order that the OS supports.
         max_mode: Mode = switch (builtin.cpu.arch) {
-            .x86_64, .aarch64 => .FiveLevel,
-            .riscv64 => .Sv57,
-            .loongarch64 => .FourLevel,
+            .x86_64, .aarch64 => .five_level,
+            .riscv64 => .sv57,
+            .loongarch64 => .four_level,
             else => unreachable,
         },
         /// The lowest paging mode in numerical order that the OS supports.
         min_mode: Mode = switch (builtin.cpu.arch) {
-            .x86_64, .aarch64, .loongarch64 => .FourLevel,
-            .riscv64 => .Sv39,
+            .x86_64, .aarch64, .loongarch64 => .four_level,
+            .riscv64 => .sv39,
             else => unreachable,
         },
     };
@@ -366,18 +366,18 @@ pub const PagingMode = struct {
     pub const Mode = switch (builtin.cpu.arch) {
         .x86_64, .aarch64 => enum(u64) {
             /// 4-level paging
-            FourLevel,
+            four_level,
             /// 5-level paging
-            FiveLevel,
+            five_level,
         },
         .riscv64 => enum(u64) {
-            Sv39,
-            Sv48,
-            Sv57,
+            sv39,
+            sv48,
+            sv57,
         },
         .loongarch64 => enum(u64) {
             /// 4-level paging
-            FourLevel,
+            four_level,
         },
         else => u64,
     };
@@ -486,7 +486,7 @@ pub const Multiprocessor = struct {
             /// An atomic write to this field causes the parked CPU to
             /// jump to the written address, on a 64KiB (or Stack Size
             /// Request size) stack.
-            goto: *const fn (*Cpu) callconv(.C) void,
+            goto: *const fn (*Cpu) callconv(.c) void,
             /// A free for use field.
             extra_argument: u64,
         },
@@ -501,7 +501,7 @@ pub const Multiprocessor = struct {
             /// An atomic write to this field causes the parked CPU to
             /// jump to the written address, on a 64KiB (or Stack Size
             /// Request size) stack.
-            goto: *const fn (*Cpu) callconv(.C) void,
+            goto: *const fn (*Cpu) callconv(.c) void,
             /// A free for use field.
             extra_argument: u64,
         },
@@ -543,15 +543,15 @@ pub const MemoryMap = struct {
     };
 
     pub const Types = enum(u64) {
-        Usable,
-        Reserved,
-        AcpiReclaimable,
-        AcpiNvs,
-        BadMemory,
-        BootloaderReclaimable,
-        KernelAndModules,
-        Framebuffer,
-        AcpiTables,
+        usable,
+        reserved,
+        acpi_reclaimable,
+        acpi_nvs,
+        bad_memory,
+        bootloader_reclaimable,
+        kernel_and_modules,
+        framebuffer,
+        acpi_tables,
     };
 };
 
